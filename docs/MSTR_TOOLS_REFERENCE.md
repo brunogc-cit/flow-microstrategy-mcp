@@ -1,71 +1,71 @@
-# MicroStrategy MCP Tools - Referência para o Time de Cypher
+# MicroStrategy MCP Tools - Reference for the Cypher Team
 
-Este documento descreve as tools MCP existentes para consulta de metadados MicroStrategy, suas queries Cypher correspondentes, e informações relevantes para criação e otimização de novas queries.
+This document describes the existing MCP tools for querying MicroStrategy metadata, their corresponding Cypher queries, and relevant information for creating and optimising new queries.
 
-## Índice
+## Table of Contents
 
-1. [Visão Geral das Tools](#visão-geral-das-tools)
-2. [Tools e Queries Detalhadas](#tools-e-queries-detalhadas)
-3. [Mapeamento de Perguntas dos Usuários](#mapeamento-de-perguntas-dos-usuários)
-4. [Perguntas Ainda Não Respondidas](#perguntas-ainda-não-respondidas)
-5. [Schema do Banco de Dados](#schema-do-banco-de-dados)
-6. [Considerações para Otimização](#considerações-para-otimização)
-7. [Diretrizes para Novas Queries](#diretrizes-para-novas-queries)
-
----
-
-## Visão Geral das Tools
-
-O sistema possui **12 tools MicroStrategy** organizadas em categorias:
-
-### Consultas por GUID
-| Tool | Descrição | Query Utilizada |
-|------|-----------|-----------------|
-| `get-metric-by-guid` | Detalhes de uma Métrica pelo GUID | `GetObjectDetailsQuery` |
-| `get-attribute-by-guid` | Detalhes de um Atributo pelo GUID | `GetObjectDetailsQuery` |
-
-### Busca com Filtros
-| Tool | Descrição | Query Utilizada |
-|------|-----------|-----------------|
-| `search-metrics` | Busca Métricas com filtros | `SearchObjectsQuery` |
-| `search-attributes` | Busca Atributos com filtros | `SearchObjectsQuery` |
-
-### Reports/Dependentes
-| Tool | Descrição | Query Utilizada |
-|------|-----------|-----------------|
-| `get-reports-using-metric` | Reports que usam uma Métrica | `ReportsUsingObjectsQuery` |
-| `get-reports-using-attribute` | Reports que usam um Atributo | `ReportsUsingObjectsQuery` |
-
-### Tabelas Fonte (Lineage)
-| Tool | Descrição | Query Utilizada |
-|------|-----------|-----------------|
-| `get-metric-source-tables` | Tabelas fonte de uma Métrica | `SourceTablesQuery` |
-| `get-attribute-source-tables` | Tabelas fonte de um Atributo | `SourceTablesQuery` |
-
-### Dependências Downstream (do que depende)
-| Tool | Descrição | Query Utilizada |
-|------|-----------|-----------------|
-| `get-metric-dependencies` | Do que a Métrica depende | `DownstreamDependenciesQuery` |
-| `get-attribute-dependencies` | Do que o Atributo depende | `DownstreamDependenciesQuery` |
-
-### Dependentes Upstream (o que depende)
-| Tool | Descrição | Query Utilizada |
-|------|-----------|-----------------|
-| `get-metric-dependents` | O que depende da Métrica | `UpstreamDependenciesQuery` |
-| `get-attribute-dependents` | O que depende do Atributo | `UpstreamDependenciesQuery` |
+1. [Tools Overview](#tools-overview)
+2. [Tools and Detailed Queries](#tools-and-detailed-queries)
+3. [User Questions Mapping](#user-questions-mapping)
+4. [Questions Not Yet Answered](#questions-not-yet-answered)
+5. [Database Schema](#database-schema)
+6. [Optimisation Considerations](#optimisation-considerations)
+7. [Guidelines for New Queries](#guidelines-for-new-queries)
 
 ---
 
-## Tools e Queries Detalhadas
+## Tools Overview
+
+The system has **12 MicroStrategy tools** organised into categories:
+
+### GUID Queries
+| Tool | Description | Query Used |
+|------|-------------|------------|
+| `get-metric-by-guid` | Details of a Metric by GUID | `GetObjectDetailsQuery` |
+| `get-attribute-by-guid` | Details of an Attribute by GUID | `GetObjectDetailsQuery` |
+
+### Search with Filters
+| Tool | Description | Query Used |
+|------|-------------|------------|
+| `search-metrics` | Search Metrics with filters | `SearchObjectsQuery` |
+| `search-attributes` | Search Attributes with filters | `SearchObjectsQuery` |
+
+### Reports/Dependents
+| Tool | Description | Query Used |
+|------|-------------|------------|
+| `get-reports-using-metric` | Reports that use a Metric | `ReportsUsingObjectsQuery` |
+| `get-reports-using-attribute` | Reports that use an Attribute | `ReportsUsingObjectsQuery` |
+
+### Source Tables (Lineage)
+| Tool | Description | Query Used |
+|------|-------------|------------|
+| `get-metric-source-tables` | Source tables of a Metric | `SourceTablesQuery` |
+| `get-attribute-source-tables` | Source tables of an Attribute | `SourceTablesQuery` |
+
+### Downstream Dependencies (what it depends on)
+| Tool | Description | Query Used |
+|------|-------------|------------|
+| `get-metric-dependencies` | What the Metric depends on | `DownstreamDependenciesQuery` |
+| `get-attribute-dependencies` | What the Attribute depends on | `DownstreamDependenciesQuery` |
+
+### Upstream Dependents (what depends on it)
+| Tool | Description | Query Used |
+|------|-------------|------------|
+| `get-metric-dependents` | What depends on the Metric | `UpstreamDependenciesQuery` |
+| `get-attribute-dependents` | What depends on the Attribute | `UpstreamDependenciesQuery` |
+
+---
+
+## Tools and Detailed Queries
 
 ### Query 1: `GetObjectDetailsQuery`
 
-**Tools que usam:** `get-metric-by-guid`, `get-attribute-by-guid`
+**Tools that use it:** `get-metric-by-guid`, `get-attribute-by-guid`
 
-**Parâmetros:**
-- `neodash_selected_guid` (array de strings): GUIDs dos objetos (suporta prefix matching com STARTS WITH)
+**Parameters:**
+- `neodash_selected_guid` (array of strings): Object GUIDs (supports prefix matching with STARTS WITH)
 
-**Retorno:** Tipo, GUID, Nome, Status, Group, SubGroup, Team, RAW, SERVE, SEMANTIC, EDWTable, EDWColumn, ADETable, ADEColumn, SemanticName, SemanticModel, DBEssential, PBEssential, Notes
+**Returns:** Type, GUID, Name, Status, Group, SubGroup, Team, RAW, SERVE, SEMANTIC, EDWTable, EDWColumn, ADETable, ADEColumn, SemanticName, SemanticModel, DBEssential, PBEssential, Notes
 
 ```cypher
 WITH $neodash_selected_guid as selectedGuids
@@ -125,17 +125,17 @@ RETURN
 
 ### Query 2: `SearchObjectsQuery`
 
-**Tools que usam:** `search-metrics`, `search-attributes`
+**Tools that use it:** `search-metrics`, `search-attributes`
 
-**Parâmetros:**
-- `neodash_searchterm` (string): Termos de busca separados por vírgula
-- `neodash_objecttype` (string): "Metric", "Attribute" ou "All Types"
-- `neodash_priority_level` (array): Níveis de prioridade como "P1 (Highest)", "P2", etc.
-- `neodash_business_area` (array): Áreas de negócio
-- `neodash_status` (array): Valores de status de paridade
-- `neodash_data_domain` (array): Domínios de dados
+**Parameters:**
+- `neodash_searchterm` (string): Search terms separated by comma
+- `neodash_objecttype` (string): "Metric", "Attribute" or "All Types"
+- `neodash_priority_level` (array): Priority levels such as "P1 (Highest)", "P2", etc.
+- `neodash_business_area` (array): Business areas
+- `neodash_status` (array): Parity status values
+- `neodash_data_domain` (array): Data domains
 
-**Retorno:** Type, Priority, Name, Status, Team, Reports (contagem), Tables (contagem), GUID
+**Returns:** Type, Priority, Name, Status, Team, Reports (count), Tables (count), GUID
 
 ```cypher
 WITH CASE WHEN coalesce($neodash_searchterm, '') = '' THEN null ELSE [term IN split($neodash_searchterm, ',') | toLower(trim(term))] END as searchTerms,
@@ -192,14 +192,14 @@ ORDER BY Reports DESC
 
 ### Query 3: `ReportsUsingObjectsQuery`
 
-**Tools que usam:** `get-reports-using-metric`, `get-reports-using-attribute`
+**Tools that use it:** `get-reports-using-metric`, `get-reports-using-attribute`
 
-**Parâmetros:**
-- `neodash_selected_guid` (array de strings): GUIDs dos objetos
-- `neodash_priority_level` (array): Níveis de prioridade
-- `neodash_business_area` (array): Áreas de negócio
+**Parameters:**
+- `neodash_selected_guid` (array of strings): Object GUIDs
+- `neodash_priority_level` (array): Priority levels
+- `neodash_business_area` (array): Business areas
 
-**Retorno:** Selected Item, Report Name, Priority, Area, Department, Users, Usage
+**Returns:** Selected Item, Report Name, Priority, Area, Department, Users, Usage
 
 ```cypher
 WITH $neodash_selected_guid as selectedGuids,
@@ -230,12 +230,12 @@ ORDER BY `Selected Item`, `Report Name`
 
 ### Query 4: `SourceTablesQuery`
 
-**Tools que usam:** `get-metric-source-tables`, `get-attribute-source-tables`
+**Tools that use it:** `get-metric-source-tables`, `get-attribute-source-tables`
 
-**Parâmetros:**
-- `neodash_selected_guid` (array de strings): GUIDs dos objetos
+**Parameters:**
+- `neodash_selected_guid` (array of strings): Object GUIDs
 
-**Retorno:** Selected Item, Table Name, Table GUID
+**Returns:** Selected Item, Table Name, Table GUID
 
 ```cypher
 WITH $neodash_selected_guid as selectedGuids
@@ -256,12 +256,12 @@ ORDER BY `Selected Item`, `Table Name`
 
 ### Query 5: `DownstreamDependenciesQuery`
 
-**Tools que usam:** `get-metric-dependencies`, `get-attribute-dependencies`
+**Tools that use it:** `get-metric-dependencies`, `get-attribute-dependencies`
 
-**Parâmetros:**
-- `neodash_selected_guid` (array de strings): GUIDs dos objetos
+**Parameters:**
+- `neodash_selected_guid` (array of strings): Object GUIDs
 
-**Retorno:** Nó original (n) e caminhos de dependência (downstream)
+**Returns:** Original node (n) and dependency paths (downstream)
 
 ```cypher
 WITH $neodash_selected_guid as selectedGuids
@@ -277,12 +277,12 @@ RETURN n, downstream
 
 ### Query 6: `UpstreamDependenciesQuery`
 
-**Tools que usam:** `get-metric-dependents`, `get-attribute-dependents`
+**Tools that use it:** `get-metric-dependents`, `get-attribute-dependents`
 
-**Parâmetros:**
-- `neodash_selected_guid` (array de strings): GUIDs dos objetos
+**Parameters:**
+- `neodash_selected_guid` (array of strings): Object GUIDs
 
-**Retorno:** Nó original (n) e caminhos upstream (upstream) - limitado a 1000 paths
+**Returns:** Original node (n) and upstream paths (upstream) - limited to 1000 paths
 
 ```cypher
 WITH $neodash_selected_guid as selectedGuids
@@ -298,179 +298,179 @@ RETURN n, upstream
 
 ---
 
-## Mapeamento de Perguntas dos Usuários
+## User Questions Mapping
 
-### Perguntas JÁ RESPONDIDAS pelas Tools Existentes
+### Questions ALREADY ANSWERED by Existing Tools
 
-| Pergunta do Usuário | Tool Recomendada |
-|---------------------|------------------|
-| "Quais são os detalhes da métrica X?" | `get-metric-by-guid` |
-| "Qual o status de paridade do atributo Y?" | `get-attribute-by-guid` |
-| "Quais métricas estão relacionadas a 'revenue'?" | `search-metrics` |
-| "Encontre atributos com status 'Not Started'" | `search-attributes` |
-| "Quais reports usam a métrica Z?" | `get-reports-using-metric` |
-| "Quais reports usam o atributo W?" | `get-reports-using-attribute` |
-| "De quais tabelas a métrica X se alimenta?" | `get-metric-source-tables` |
-| "Quais são as tabelas fonte do atributo Y?" | `get-attribute-source-tables` |
-| "Do que a métrica X depende?" | `get-metric-dependencies` |
-| "Qual a cadeia de cálculo do atributo Y?" | `get-attribute-dependencies` |
-| "O que será afetado se eu mudar a métrica X?" | `get-metric-dependents` |
-| "Quais objetos dependem do atributo Y?" | `get-attribute-dependents` |
-| "Quais métricas P1 existem na área de Finance?" | `search-metrics` (com filtros) |
-| "Liste atributos do domínio 'Sales' com status 'In Progress'" | `search-attributes` (com filtros) |
-
----
-
-## Perguntas Ainda NÃO Respondidas
-
-### Alta Prioridade (Frequentemente Requisitadas)
-
-| Pergunta | Sugestão de Implementação |
-|----------|--------------------------|
-| "Qual é a fórmula/definição completa da métrica X?" | Nova query retornando `formula`, `expressions_json`, `raw_json` |
-| "Quais métricas usam o atributo Y na sua fórmula?" | Traversal reverso de dependência específico |
-| "Qual o mapeamento Power BI equivalente para métrica X?" | Enriquecer `GetObjectDetailsQuery` com mais campos PB |
-| "Mostre o grafo completo de dependências da métrica X" | Visualização de grafo com profundidade configurável |
-| "Quais Facts são usados pela métrica X?" | Traversal específico para Facts |
-| "Compare duas métricas (X e Y) - diferenças" | Nova tool de comparação |
-
-### Média Prioridade
-
-| Pergunta | Sugestão de Implementação |
-|----------|--------------------------|
-| "Quais métricas não estão mapeadas para Power BI?" | Query com filtro `pb_semantic IS NULL` |
-| "Liste todas as métricas de um determinado Team" | Adicionar filtro por Team no `search-metrics` |
-| "Quais reports são mais críticos (mais usuários)?" | Nova query ordenando por `usage_users_count` |
-| "Quais tabelas EDW são mais utilizadas?" | Agregação por tabela EDW |
-| "Mostre métricas órfãs (sem dependentes)" | Query identificando objetos sem upstream |
-| "Qual a cobertura de migração por área?" | Agregação de status por `usage_area` |
-
-### Baixa Prioridade (Nice to Have)
-
-| Pergunta | Sugestão de Implementação |
-|----------|--------------------------|
-| "Histórico de mudanças de status de uma métrica" | Requer campos de auditoria no grafo |
-| "Quais métricas foram atualizadas esta semana?" | Requer campos de timestamp |
-| "Sugira ordem de migração baseado em dependências" | Algoritmo topológico sobre o grafo |
+| User Question | Recommended Tool |
+|---------------|------------------|
+| "What are the details of metric X?" | `get-metric-by-guid` |
+| "What is the parity status of attribute Y?" | `get-attribute-by-guid` |
+| "Which metrics are related to 'revenue'?" | `search-metrics` |
+| "Find attributes with status 'Not Started'" | `search-attributes` |
+| "Which reports use metric Z?" | `get-reports-using-metric` |
+| "Which reports use attribute W?" | `get-reports-using-attribute` |
+| "Which tables does metric X feed from?" | `get-metric-source-tables` |
+| "What are the source tables for attribute Y?" | `get-attribute-source-tables` |
+| "What does metric X depend on?" | `get-metric-dependencies` |
+| "What is the calculation chain for attribute Y?" | `get-attribute-dependencies` |
+| "What will be affected if I change metric X?" | `get-metric-dependents` |
+| "Which objects depend on attribute Y?" | `get-attribute-dependents` |
+| "Which P1 metrics exist in the Finance area?" | `search-metrics` (with filters) |
+| "List attributes from the 'Sales' domain with status 'In Progress'" | `search-attributes` (with filters) |
 
 ---
 
-## Schema do Banco de Dados
+## Questions Not Yet Answered
 
-### Labels de Nós Comuns
+### High Priority (Frequently Requested)
 
-| Label | Descrição |
-|-------|-----------|
-| `MSTRObject` | Label genérico para todos objetos MicroStrategy |
-| `Metric` | Métricas (também tem label MSTRObject) |
-| `Attribute` | Atributos (também tem label MSTRObject) |
+| Question | Implementation Suggestion |
+|----------|---------------------------|
+| "What is the complete formula/definition of metric X?" | New query returning `formula`, `expressions_json`, `raw_json` |
+| "Which metrics use attribute Y in their formula?" | Specific reverse dependency traversal |
+| "What is the Power BI equivalent mapping for metric X?" | Enrich `GetObjectDetailsQuery` with more PB fields |
+| "Show the complete dependency graph for metric X" | Graph visualisation with configurable depth |
+| "Which Facts are used by metric X?" | Specific traversal for Facts |
+| "Compare two metrics (X and Y) - differences" | New comparison tool |
+
+### Medium Priority
+
+| Question | Implementation Suggestion |
+|----------|---------------------------|
+| "Which metrics are not mapped to Power BI?" | Query with filter `pb_semantic IS NULL` |
+| "List all metrics for a specific Team" | Add Team filter to `search-metrics` |
+| "Which reports are most critical (most users)?" | New query ordering by `usage_users_count` |
+| "Which EDW tables are most used?" | Aggregation by EDW table |
+| "Show orphan metrics (without dependents)" | Query identifying objects without upstream |
+| "What is the migration coverage by area?" | Status aggregation by `usage_area` |
+
+### Low Priority (Nice to Have)
+
+| Question | Implementation Suggestion |
+|----------|---------------------------|
+| "Change history of a metric's status" | Requires audit fields in the graph |
+| "Which metrics were updated this week?" | Requires timestamp fields |
+| "Suggest migration order based on dependencies" | Topological algorithm over the graph |
+
+---
+
+## Database Schema
+
+### Common Node Labels
+
+| Label | Description |
+|-------|-------------|
+| `MSTRObject` | Generic label for all MicroStrategy objects |
+| `Metric` | Metrics (also has MSTRObject label) |
+| `Attribute` | Attributes (also has MSTRObject label) |
 | `Fact` | Facts |
-| `LogicalTable` | Tabelas lógicas |
-| `Report` | Reports (type em MSTRObject) |
-| `GridReport` | Grid Reports (type em MSTRObject) |
-| `Document` | Documentos (type em MSTRObject) |
-| `Filter` | Filtros (type em MSTRObject) |
-| `Prompt` | Prompts (type em MSTRObject) |
-| `Column` | Colunas |
-| `DataProduct` | Domínios/Produtos de dados |
+| `LogicalTable` | Logical tables |
+| `Report` | Reports (type in MSTRObject) |
+| `GridReport` | Grid Reports (type in MSTRObject) |
+| `Document` | Documents (type in MSTRObject) |
+| `Filter` | Filters (type in MSTRObject) |
+| `Prompt` | Prompts (type in MSTRObject) |
+| `Column` | Columns |
+| `DataProduct` | Data domains/products |
 
-### Relacionamentos
+### Relationships
 
-| Relacionamento | Descrição |
-|----------------|-----------|
-| `DEPENDS_ON` | Relação de dependência (A)-[:DEPENDS_ON]->(B) significa A depende de B |
-| `BELONGS_TO` | Pertencimento a domínio/produto de dados |
+| Relationship | Description |
+|--------------|-------------|
+| `DEPENDS_ON` | Dependency relationship (A)-[:DEPENDS_ON]->(B) means A depends on B |
+| `BELONGS_TO` | Belonging to domain/data product |
 
-### Propriedades Importantes
+### Important Properties
 
-#### Em MSTRObject/Metric/Attribute:
+#### In MSTRObject/Metric/Attribute:
 ```
-guid                      - Identificador único
-name                      - Nome do objeto
-type                      - Tipo ('Metric', 'Attribute', 'Report', etc.)
-parity_status            - Status de paridade original
-updated_parity_status    - Status de paridade atualizado (tem precedência)
-parity_group             - Grupo de paridade
-parity_subgroup          - Subgrupo de paridade
-parity_team              - Time responsável
-parity_notes             - Notas de paridade
-inherited_priority_level - Nível de prioridade herdado
+guid                      - Unique identifier
+name                      - Object name
+type                      - Type ('Metric', 'Attribute', 'Report', etc.)
+parity_status            - Original parity status
+updated_parity_status    - Updated parity status (takes precedence)
+parity_group             - Parity group
+parity_subgroup          - Parity subgroup
+parity_team              - Responsible team
+parity_notes             - Parity notes
+inherited_priority_level - Inherited priority level
 
--- Mapeamentos de dados --
+-- Data mappings --
 db_raw                   - Databricks RAW
 db_serve                 - Databricks SERVE
 pb_semantic              - Power BI Semantic
-edw_table                - Tabela EDW
-edw_column               - Coluna EDW
-ade_db_table             - Tabela ADE
-ade_db_column            - Coluna ADE
-pb_semantic_name         - Nome no modelo semântico PB
-pb_semantic_model        - Modelo semântico PB
+edw_table                - EDW Table
+edw_column               - EDW Column
+ade_db_table             - ADE Table
+ade_db_column            - ADE Column
+pb_semantic_name         - Name in PB semantic model
+pb_semantic_model        - PB semantic model
 db_essential             - Databricks Essential
 pb_essential             - Power BI Essential
 
--- Lineage (arrays de GUIDs) --
-lineage_source_tables       - GUIDs das tabelas fonte
-lineage_source_tables_count - Contagem de tabelas fonte
-lineage_used_by_reports     - GUIDs dos reports que usam o objeto
+-- Lineage (arrays of GUIDs) --
+lineage_source_tables       - Source table GUIDs
+lineage_source_tables_count - Source table count
+lineage_used_by_reports     - GUIDs of reports that use the object
 ```
 
-#### Em Metric:
+#### In Metric:
 ```
-formula          - Fórmula da métrica (texto)
-expressions_json - Expressões em JSON
-raw_json         - JSON original completo
-location         - Localização no projeto
-```
-
-#### Em Attribute:
-```
-forms_json       - Forms do atributo em JSON
-location         - Localização no projeto
+formula          - Metric formula (text)
+expressions_json - Expressions in JSON
+raw_json         - Complete original JSON
+location         - Location in the project
 ```
 
-#### Em Report/GridReport/Document:
+#### In Attribute:
 ```
-priority_level      - Nível de prioridade (1, 2, 3, etc.)
-usage_area          - Área de uso/negócio
-usage_department    - Departamento
-usage_users_count   - Contagem de usuários
-usage_consistency   - Consistência de uso
-usage_volume        - Volume de uso
+forms_json       - Attribute forms in JSON
+location         - Location in the project
 ```
 
-#### Em LogicalTable:
+#### In Report/GridReport/Document:
 ```
-physical_table_name - Nome da tabela física
-database_instance   - Instância do banco
+priority_level      - Priority level (1, 2, 3, etc.)
+usage_area          - Usage/business area
+usage_department    - Department
+usage_users_count   - User count
+usage_consistency   - Usage consistency
+usage_volume        - Usage volume
+```
+
+#### In LogicalTable:
+```
+physical_table_name - Physical table name
+database_instance   - Database instance
 ```
 
 ---
 
-## Considerações para Otimização
+## Optimisation Considerations
 
-### Performance Atual
+### Current Performance
 
-1. **`SearchObjectsQuery`** - Query mais complexa
-   - Usa CALL subqueries para agregação
-   - Múltiplos filtros opcionais com CASE WHEN
-   - EXISTS subqueries para filtros de relacionamento
-   - **Potencial otimização:** Índices em `type`, `guid`, `priority_level`, `usage_area`
+1. **`SearchObjectsQuery`** - Most complex query
+   - Uses CALL subqueries for aggregation
+   - Multiple optional filters with CASE WHEN
+   - EXISTS subqueries for relationship filters
+   - **Potential optimisation:** Indices on `type`, `guid`, `priority_level`, `usage_area`
 
 2. **`DownstreamDependenciesQuery` / `UpstreamDependenciesQuery`**
-   - Traversal variável de 1..10 níveis
-   - ALL() predicate nos nós intermediários
-   - **Potencial otimização:** Limitar profundidade, usar apoc.path se disponível
+   - Variable traversal of 1..10 levels
+   - ALL() predicate on intermediate nodes
+   - **Potential optimisation:** Limit depth, use apoc.path if available
 
 3. **`ReportsUsingObjectsQuery` / `SourceTablesQuery`**
-   - Dependem de arrays pré-computados (`lineage_used_by_reports`, `lineage_source_tables`)
-   - **Vantagem:** Arrays pré-computados aceleram lookups
-   - **Desvantagem:** Requer manutenção da integridade dos arrays
+   - Depend on pre-computed arrays (`lineage_used_by_reports`, `lineage_source_tables`)
+   - **Advantage:** Pre-computed arrays speed up lookups
+   - **Disadvantage:** Requires maintaining array integrity
 
-### Índices Recomendados
+### Recommended Indices
 
 ```cypher
--- Índices existentes (verificar):
+-- Existing indices (verify):
 CREATE INDEX IF NOT EXISTS FOR (n:MSTRObject) ON (n.guid);
 CREATE INDEX IF NOT EXISTS FOR (n:MSTRObject) ON (n.type);
 CREATE INDEX IF NOT EXISTS FOR (n:MSTRObject) ON (n.priority_level);
@@ -479,46 +479,46 @@ CREATE INDEX IF NOT EXISTS FOR (n:Metric) ON (n.guid);
 CREATE INDEX IF NOT EXISTS FOR (n:Attribute) ON (n.guid);
 CREATE INDEX IF NOT EXISTS FOR (n:DataProduct) ON (n.name);
 
--- Índice composto para busca:
+-- Composite index for search:
 CREATE INDEX IF NOT EXISTS FOR (n:MSTRObject) ON (n.type, n.guid);
 ```
 
-### Padrões de Uso dos Parâmetros
+### Parameter Usage Patterns
 
-Todas as queries usam parâmetros com prefixo `neodash_` (compatibilidade com NeoDash):
-- `neodash_selected_guid` - Array de GUIDs selecionados
-- `neodash_searchterm` - Termo de busca
-- `neodash_objecttype` - Tipo do objeto
-- `neodash_priority_level` - Array de níveis de prioridade
-- `neodash_business_area` - Array de áreas de negócio
-- `neodash_status` - Array de status
-- `neodash_data_domain` - Array de domínios
+All queries use parameters with `neodash_` prefix (NeoDash compatibility):
+- `neodash_selected_guid` - Array of selected GUIDs
+- `neodash_searchterm` - Search term
+- `neodash_objecttype` - Object type
+- `neodash_priority_level` - Array of priority levels
+- `neodash_business_area` - Array of business areas
+- `neodash_status` - Array of statuses
+- `neodash_data_domain` - Array of domains
 
 ---
 
-## Diretrizes para Novas Queries
+## Guidelines for New Queries
 
-### Padrão de Estrutura
+### Structure Pattern
 
 ```cypher
--- 1. Processamento de parâmetros com CASE WHEN
+-- 1. Parameter processing with CASE WHEN
 WITH CASE WHEN $param IS NULL THEN default ELSE processed_value END as paramName
 
--- 2. MATCH inicial com filtros básicos
+-- 2. Initial MATCH with basic filters
 MATCH (n:Label)
 WHERE n.property = value
 
--- 3. Filtros condicionais
+-- 3. Conditional filters
 WHERE (filterVar IS NULL OR n.property IN filterVar)
 
--- 4. Agregações em CALL subqueries
+-- 4. Aggregations in CALL subqueries
 CALL {
   WITH n
   MATCH pattern
   RETURN aggregated_result
 }
 
--- 5. RETURN com campos padronizados
+-- 5. RETURN with standardised fields
 RETURN 
   n.type as Type,
   n.name as Name,
@@ -526,41 +526,41 @@ RETURN
 ORDER BY relevantField DESC
 ```
 
-### Checklist para Novas Queries
+### Checklist for New Queries
 
-- [ ] Usar parâmetros com prefixo `neodash_` para compatibilidade
-- [ ] Tratar NULL/empty para todos os parâmetros opcionais
-- [ ] Usar `effectiveStatus` pattern para status de paridade
-- [ ] Limitar resultados de traversal (ex: `[0..1000]`)
-- [ ] Incluir GUID nos resultados para permitir drill-down
-- [ ] Ordenar resultados de forma significativa
-- [ ] Testar com GUIDs reais antes de implementar
+- [ ] Use parameters with `neodash_` prefix for compatibility
+- [ ] Handle NULL/empty for all optional parameters
+- [ ] Use `effectiveStatus` pattern for parity status
+- [ ] Limit traversal results (e.g., `[0..1000]`)
+- [ ] Include GUID in results to allow drill-down
+- [ ] Order results meaningfully
+- [ ] Test with real GUIDs before implementing
 
-### Template para Nova Tool
+### Template for New Tool
 
-1. Criar arquivo em `internal/tools/mstr/nome_da_tool.go`
-2. Adicionar query em `internal/tools/mstr/queries.go`
-3. Registrar em `internal/server/tools_register.go`
-4. Adicionar em `manifest.json`
-
----
-
-## Arquivos de Referência
-
-| Arquivo | Descrição |
-|---------|-----------|
-| `internal/tools/mstr/queries.go` | Todas as queries Cypher |
-| `internal/tools/mstr/*.go` | Implementação das tools |
-| `internal/server/tools_register.go` | Registro das tools no servidor |
-| `manifest.json` | Manifesto MCP com lista de tools |
-| `queries/01.cypher` | Queries originais do NeoDash |
-| `queries/neo4j-query-templates.md` | Templates adicionais de query |
+1. Create file in `internal/tools/mstr/tool_name.go`
+2. Add query in `internal/tools/mstr/queries.go`
+3. Register in `internal/server/tools_register.go`
+4. Add to `manifest.json`
 
 ---
 
-## Histórico de Atualizações
+## Reference Files
 
-| Data | Versão | Mudança |
-|------|--------|---------|
-| 2026-01-30 | 1.0.0 | Documento inicial com 12 tools MSTR |
-| 2026-01-24 | - | Arrays de lineage agora contêm GUIDs puros (sem formatação) |
+| File | Description |
+|------|-------------|
+| `internal/tools/mstr/queries.go` | All Cypher queries |
+| `internal/tools/mstr/*.go` | Tool implementations |
+| `internal/server/tools_register.go` | Tool registration in the server |
+| `manifest.json` | MCP manifest with tool list |
+| `queries/01.cypher` | Original NeoDash queries |
+| `queries/neo4j-query-templates.md` | Additional query templates |
+
+---
+
+## Update History
+
+| Date | Version | Change |
+|------|---------|--------|
+| 2026-01-30 | 1.0.0 | Initial document with 12 MSTR tools |
+| 2026-01-24 | - | Lineage arrays now contain pure GUIDs (unformatted) |
