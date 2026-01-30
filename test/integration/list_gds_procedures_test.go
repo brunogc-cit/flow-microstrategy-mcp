@@ -3,9 +3,11 @@
 package integration
 
 import (
+	"context"
 	"strings"
 	"testing"
 
+	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools/gds"
 	"github.com/brunogc-cit/flow-microstrategy-mcp/test/integration/helpers"
 )
@@ -16,7 +18,17 @@ func TestListGdsProcedures(t *testing.T) {
 	tc := helpers.NewTestContext(t, dbs.GetDriver())
 
 	listGds := gds.ListGdsProceduresHandler(tc.Deps)
-	res := tc.CallTool(listGds, nil)
+
+	// Call handler directly to check for GDS availability before using tc.CallTool
+	req := mcp.CallToolRequest{
+		Params: mcp.CallToolParams{
+			Arguments: nil,
+		},
+	}
+	res, err := listGds(context.Background(), req)
+	if err != nil {
+		t.Fatalf("tool call failed: %v", err)
+	}
 
 	// Skip if GDS is not installed (tool returns error)
 	if res.IsError {
