@@ -91,6 +91,12 @@ jobs:
               --max-replicas 1
           else
             echo "Updating existing Container App: $APP_NAME"
+            az containerapp registry set \
+              --name $APP_NAME \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --server ${{ env.REGISTRY }} \
+              --username ${{ github.actor }} \
+              --password ${{ secrets.GITHUB_TOKEN }}
             az containerapp update \
               --name $APP_NAME \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
