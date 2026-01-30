@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/neo4j/mcp/internal/tools"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools"
 )
 
 // GetAttributeDependenciesInput defines the input schema for the get-attribute-dependencies tool.
