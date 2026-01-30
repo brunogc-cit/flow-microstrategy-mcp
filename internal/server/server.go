@@ -345,9 +345,9 @@ func (s *Neo4jMCPServer) StartHTTPServer() error {
 	// Register Streamable HTTP transport at /mcp
 	mux.Handle("/mcp", s.chainMiddleware(allowedOrigins, mcpServerHTTP))
 
-	// Register SSE transport endpoints
-	mux.Handle("/sse", s.chainMiddleware(allowedOrigins, sseServer))
-	mux.Handle("/message", s.chainMiddleware(allowedOrigins, sseServer))
+	// Register SSE transport endpoints using the specific handlers
+	mux.Handle("/sse", s.chainMiddleware(allowedOrigins, sseServer.SSEHandler()))
+	mux.Handle("/message", s.chainMiddleware(allowedOrigins, sseServer.MessageHandler()))
 
 	slog.Info("Registered transports", "streamable_http", "/mcp", "sse", "/sse", "sse_message", "/message")
 
