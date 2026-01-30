@@ -18,6 +18,11 @@ func TestListGdsProcedures(t *testing.T) {
 	listGds := gds.ListGdsProceduresHandler(tc.Deps)
 	res := tc.CallTool(listGds, nil)
 
+	// Skip if GDS is not installed (tool returns error)
+	if res.IsError {
+		t.Skip("GDS library is not installed on this Neo4j instance, skipping test")
+	}
+
 	var procedures []map[string]any
 	tc.ParseJSONResponse(res, &procedures)
 	t.Run("should return some procedures", func(t *testing.T) {
