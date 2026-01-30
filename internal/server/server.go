@@ -1,3 +1,4 @@
+// Package server provides the MCP server implementation for Flow Microstrategy.
 package server
 
 import (
