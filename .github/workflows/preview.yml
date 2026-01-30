@@ -1,0 +1,192 @@
+name: Preview Environment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  AZURE_RESOURCE_GROUP: ASOS_AI
+  AZURE_CONTAINER_ENV: cae-mcp-asos
+  AZURE_LOCATION: uksouth
+
+jobs:
+  deploy-preview:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=pr-${{ github.event.pull_request.number }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container Apps
+        id: deploy
+        run: |
+          APP_NAME="ca-mcp-asos-pr-${{ github.event.pull_request.number }}"
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}"
+
+          # Check if Container App exists
+          EXISTS=$(az containerapp show --name $APP_NAME --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "name" -o tsv 2>/dev/null || echo "")
+
+          if [ -z "$EXISTS" ]; then
+            echo "Creating new Container App: $APP_NAME"
+            az containerapp create \
+              --name $APP_NAME \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --environment ${{ env.AZURE_CONTAINER_ENV }} \
+              --image $IMAGE_TAG \
+              --target-port 8080 \
+              --ingress external \
+              --env-vars \
+                FLOW_URI="${{ secrets.FLOW_URI_PREVIEW }}" \
+                FLOW_USERNAME="${{ secrets.FLOW_USERNAME_PREVIEW }}" \
+                FLOW_PASSWORD="${{ secrets.FLOW_PASSWORD_PREVIEW }}" \
+                FLOW_MCP_TRANSPORT="http" \
+              --registry-server ${{ env.REGISTRY }} \
+              --registry-username ${{ github.actor }} \
+              --registry-password ${{ secrets.GITHUB_TOKEN }} \
+              --cpu 0.5 \
+              --memory 1Gi \
+              --min-replicas 0 \
+              --max-replicas 1
+          else
+            echo "Updating existing Container App: $APP_NAME"
+            az containerapp update \
+              --name $APP_NAME \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --image $IMAGE_TAG
+          fi
+
+          # Get the FQDN
+          FQDN=$(az containerapp show --name $APP_NAME --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
+          echo "fqdn=$FQDN" >> $GITHUB_OUTPUT
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fqdn = '${{ steps.deploy.outputs.fqdn }}';
+            const appName = '${{ steps.deploy.outputs.app_name }}';
+
+            const body = `## 🚀 Preview Environment Deployed
+
+            | Resource | Value |
+            |----------|-------|
+            | **URL** | https://${fqdn} |
+            | **Container App** | \`${appName}\` |
+            | **Image** | \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}\` |
+
+            The preview environment will be automatically deleted when this PR is closed or merged.`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Preview Environment')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+  cleanup-preview:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Delete preview environment
+        run: |
+          APP_NAME="ca-mcp-asos-pr-${{ github.event.pull_request.number }}"
+
+          # Check if app exists before deleting
+          EXISTS=$(az containerapp show --name $APP_NAME --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "name" -o tsv 2>/dev/null || echo "")
+
+          if [ -n "$EXISTS" ]; then
+            echo "Deleting Container App: $APP_NAME"
+            az containerapp delete \
+              --name $APP_NAME \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --yes
+            echo "✅ Preview environment deleted"
+          else
+            echo "ℹ️ Container App $APP_NAME does not exist, skipping deletion"
+          fi
+
+      - name: Comment PR with cleanup notice
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `## 🧹 Preview Environment Cleaned Up
+
+            The preview environment for this PR has been deleted.`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
