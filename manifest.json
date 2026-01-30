@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "neo4j-mcp",
   "version": "1.0.0",
-  "description": "Official Model Context Protocol (MCP) server for Neo4j.",
+  "description": "MCP server for MicroStrategy to Power BI migration - query metrics, attributes, dependencies and lineage.",
   "author": {
     "name": "Neo4j",
     "url": "https://neo4j.com/"
@@ -95,16 +95,52 @@
   },
   "tools": [
     {
-      "name": "get-schema",
-      "description": "Introspect labels, relationship types, property keys"
+      "name": "get-metric-by-guid",
+      "description": "Get detailed information about a MicroStrategy Metric by its GUID"
     },
     {
-      "name": "read-cypher",
-      "description": "Execute arbitrary Cypher (read mode)"
+      "name": "get-attribute-by-guid",
+      "description": "Get detailed information about a MicroStrategy Attribute by its GUID"
     },
     {
-      "name": "write-cypher",
-      "description": "Execute arbitrary Cypher (write mode)"
+      "name": "search-metrics",
+      "description": "Search for MicroStrategy Metrics by name and filters"
+    },
+    {
+      "name": "search-attributes",
+      "description": "Search for MicroStrategy Attributes by name and filters"
+    },
+    {
+      "name": "get-reports-using-metric",
+      "description": "Find reports/documents that use a specific Metric"
+    },
+    {
+      "name": "get-reports-using-attribute",
+      "description": "Find reports/documents that use a specific Attribute"
+    },
+    {
+      "name": "get-metric-source-tables",
+      "description": "Find source database tables that feed a Metric"
+    },
+    {
+      "name": "get-attribute-source-tables",
+      "description": "Find source database tables that feed an Attribute"
+    },
+    {
+      "name": "get-metric-dependencies",
+      "description": "Find what a Metric depends on (downstream dependencies)"
+    },
+    {
+      "name": "get-attribute-dependencies",
+      "description": "Find what an Attribute depends on (downstream dependencies)"
+    },
+    {
+      "name": "get-metric-dependents",
+      "description": "Find what depends on a Metric (upstream - reports, other metrics)"
+    },
+    {
+      "name": "get-attribute-dependents",
+      "description": "Find what depends on an Attribute (upstream - reports, metrics)"
     },
     {
       "name": "list-gds-procedures",
@@ -117,10 +153,12 @@
   "keywords": [
     "Neo4j",
     "MCP",
-    "Neo4j MCP",
-    "Neo4j MCP Server",
-    "Neo4j Official MCP Server",
-    "neo4j-mcp"
+    "MicroStrategy",
+    "Power BI",
+    "Migration",
+    "Metrics",
+    "Attributes",
+    "Lineage"
   ],
   "license": "GPL",
   "repository": {

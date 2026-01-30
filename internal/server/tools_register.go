@@ -3,8 +3,8 @@ package server
 import (
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/neo4j/mcp/internal/tools"
-	"github.com/neo4j/mcp/internal/tools/cypher"
 	"github.com/neo4j/mcp/internal/tools/gds"
+	"github.com/neo4j/mcp/internal/tools/mstr"
 )
 
 // registerTools registers all enabled MCP tools and adds them to the provided MCP server.
@@ -24,8 +24,9 @@ type toolFilter func(tools []ToolDefinition) []ToolDefinition
 type toolCategory int
 
 const (
-	cypherCategory toolCategory = 0
+	cypherCategory toolCategory = 0 // Hidden - generic Neo4j tools (code kept but not exposed)
 	gdsCategory    toolCategory = 1
+	mstrCategory   toolCategory = 2 // MicroStrategy migration tools
 )
 
 type ToolDefinition struct {
@@ -64,6 +65,9 @@ func (s *Neo4jMCPServer) getEnabledTools() []server.ServerTool {
 	if !s.gdsInstalled {
 		filters = append(filters, filterGDSTools)
 	}
+	// Always filter out generic cypher tools (hidden but code kept)
+	filters = append(filters, filterCypherTools)
+
 	deps := &tools.ToolDependencies{
 		DBService:        s.dbService,
 		AnalyticsService: s.anService,
@@ -100,35 +104,54 @@ func filterGDSTools(tools []ToolDefinition) []ToolDefinition {
 	return nonGDSTools
 }
 
+// filterCypherTools removes generic cypher tools (get-schema, read-cypher, write-cypher)
+// These are hidden from users but the code is kept in internal/tools/cypher/
+func filterCypherTools(tools []ToolDefinition) []ToolDefinition {
+	nonCypherTools := make([]ToolDefinition, 0, len(tools))
+	for _, t := range tools {
+		if t.category != cypherCategory {
+			nonCypherTools = append(nonCypherTools, t)
+		}
+	}
+	return nonCypherTools
+}
+
 // getAllToolsDefs returns all available tools with their specs and handlers
 func (s *Neo4jMCPServer) getAllToolsDefs(deps *tools.ToolDependencies) []ToolDefinition {
 
 	return []ToolDefinition{
-		{
-			category: cypherCategory,
-			definition: server.ServerTool{
-				Tool:    cypher.GetSchemaSpec(),
-				Handler: cypher.GetSchemaHandler(deps, s.config.SchemaSampleSize),
-			},
-			readonly: true,
-		},
-		{
-			category: cypherCategory,
-			definition: server.ServerTool{
-				Tool:    cypher.ReadCypherSpec(),
-				Handler: cypher.ReadCypherHandler(deps),
-			},
-			readonly: true,
-		},
-		{
-			category: cypherCategory,
-			definition: server.ServerTool{
-				Tool:    cypher.WriteCypherSpec(),
-				Handler: cypher.WriteCypherHandler(deps),
-			},
-			readonly: false,
-		},
+		// =============================================================================
+		// HIDDEN: Generic Cypher Tools (code kept but not exposed to users)
+		// =============================================================================
+		// These tools are filtered out by filterCypherTools() but kept for potential future use
+		// {
+		// 	category: cypherCategory,
+		// 	definition: server.ServerTool{
+		// 		Tool:    cypher.GetSchemaSpec(),
+		// 		Handler: cypher.GetSchemaHandler(deps, s.config.SchemaSampleSize),
+		// 	},
+		// 	readonly: true,
+		// },
+		// {
+		// 	category: cypherCategory,
+		// 	definition: server.ServerTool{
+		// 		Tool:    cypher.ReadCypherSpec(),
+		// 		Handler: cypher.ReadCypherHandler(deps),
+		// 	},
+		// 	readonly: true,
+		// },
+		// {
+		// 	category: cypherCategory,
+		// 	definition: server.ServerTool{
+		// 		Tool:    cypher.WriteCypherSpec(),
+		// 		Handler: cypher.WriteCypherHandler(deps),
+		// 	},
+		// 	readonly: false,
+		// },
+
+		// =============================================================================
 		// GDS Category/Section
+		// =============================================================================
 		{
 			category: gdsCategory,
 			definition: server.ServerTool{
@@ -137,6 +160,125 @@ func (s *Neo4jMCPServer) getAllToolsDefs(deps *tools.ToolDependencies) []ToolDef
 			},
 			readonly: true,
 		},
-		// Add other categories below...
+
+		// =============================================================================
+		// MicroStrategy Migration Tools - Details by GUID
+		// =============================================================================
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.GetMetricByGuidSpec(),
+				Handler: mstr.GetMetricByGuidHandler(deps),
+			},
+			readonly: true,
+		},
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.GetAttributeByGuidSpec(),
+				Handler: mstr.GetAttributeByGuidHandler(deps),
+			},
+			readonly: true,
+		},
+
+		// =============================================================================
+		// MicroStrategy Migration Tools - Search
+		// =============================================================================
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.SearchMetricsSpec(),
+				Handler: mstr.SearchMetricsHandler(deps),
+			},
+			readonly: true,
+		},
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.SearchAttributesSpec(),
+				Handler: mstr.SearchAttributesHandler(deps),
+			},
+			readonly: true,
+		},
+
+		// =============================================================================
+		// MicroStrategy Migration Tools - Reports Using Objects
+		// =============================================================================
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.GetReportsUsingMetricSpec(),
+				Handler: mstr.GetReportsUsingMetricHandler(deps),
+			},
+			readonly: true,
+		},
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.GetReportsUsingAttributeSpec(),
+				Handler: mstr.GetReportsUsingAttributeHandler(deps),
+			},
+			readonly: true,
+		},
+
+		// =============================================================================
+		// MicroStrategy Migration Tools - Source Tables
+		// =============================================================================
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.GetMetricSourceTablesSpec(),
+				Handler: mstr.GetMetricSourceTablesHandler(deps),
+			},
+			readonly: true,
+		},
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.GetAttributeSourceTablesSpec(),
+				Handler: mstr.GetAttributeSourceTablesHandler(deps),
+			},
+			readonly: true,
+		},
+
+		// =============================================================================
+		// MicroStrategy Migration Tools - Dependencies (Downstream)
+		// =============================================================================
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.GetMetricDependenciesSpec(),
+				Handler: mstr.GetMetricDependenciesHandler(deps),
+			},
+			readonly: true,
+		},
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.GetAttributeDependenciesSpec(),
+				Handler: mstr.GetAttributeDependenciesHandler(deps),
+			},
+			readonly: true,
+		},
+
+		// =============================================================================
+		// MicroStrategy Migration Tools - Dependents (Upstream)
+		// =============================================================================
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.GetMetricDependentsSpec(),
+				Handler: mstr.GetMetricDependentsHandler(deps),
+			},
+			readonly: true,
+		},
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.GetAttributeDependentsSpec(),
+				Handler: mstr.GetAttributeDependentsHandler(deps),
+			},
+			readonly: true,
+		},
 	}
 }
