@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/neo4j/mcp/internal/testutil"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/testutil"
 )
 
 func TestConfig_Validate(t *testing.T) {
@@ -119,11 +119,11 @@ func TestConfig_Validate(t *testing.T) {
 
 func TestLoadConfig_ValidConfig(t *testing.T) {
 	// Unit test: set required env variables and verify LoadConfig works
-	t.Setenv("NEO4J_MCP_TRANSPORT", "stdio")
-	t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-	t.Setenv("NEO4J_USERNAME", "testuser")
-	t.Setenv("NEO4J_PASSWORD", "testpass")
-	t.Setenv("NEO4J_DATABASE", "neo4j")
+	t.Setenv("FLOW_MCP_TRANSPORT", "stdio")
+	t.Setenv("FLOW_URI", "bolt://localhost:7687")
+	t.Setenv("FLOW_USERNAME", "testuser")
+	t.Setenv("FLOW_PASSWORD", "testpass")
+	t.Setenv("FLOW_DATABASE", "neo4j")
 
 	cfg, err := LoadConfig(nil)
 	if err != nil {
@@ -150,10 +150,10 @@ func TestLoadConfig_ValidConfig(t *testing.T) {
 
 func TestLoadConfig_MissingRequiredEnvVars(t *testing.T) {
 	// Unit test: verify LoadConfig returns error when required env vars are missing
-	t.Setenv("NEO4J_MCP_TRANSPORT", "stdio")
-	t.Setenv("NEO4J_URI", "")
-	t.Setenv("NEO4J_USERNAME", "")
-	t.Setenv("NEO4J_PASSWORD", "")
+	t.Setenv("FLOW_MCP_TRANSPORT", "stdio")
+	t.Setenv("FLOW_URI", "")
+	t.Setenv("FLOW_USERNAME", "")
+	t.Setenv("FLOW_PASSWORD", "")
 
 	cfg, err := LoadConfig(nil)
 
@@ -176,11 +176,11 @@ func TestLoadConfig_MissingRequiredEnvVars(t *testing.T) {
 
 func TestLoadConfig_CLIOverrides(t *testing.T) {
 	// Unit test: verify CLI overrides take precedence over environment variables
-	t.Setenv("NEO4J_MCP_TRANSPORT", "stdio")
-	t.Setenv("NEO4J_URI", "bolt://env-host:7687")
-	t.Setenv("NEO4J_USERNAME", "env-user")
-	t.Setenv("NEO4J_PASSWORD", "env-pass")
-	t.Setenv("NEO4J_DATABASE", "env-db")
+	t.Setenv("FLOW_MCP_TRANSPORT", "stdio")
+	t.Setenv("FLOW_URI", "bolt://env-host:7687")
+	t.Setenv("FLOW_USERNAME", "env-user")
+	t.Setenv("FLOW_PASSWORD", "env-pass")
+	t.Setenv("FLOW_DATABASE", "env-db")
 
 	overrides := &CLIOverrides{
 		URI:      "bolt://cli-host:7687",
@@ -211,11 +211,11 @@ func TestLoadConfig_CLIOverrides(t *testing.T) {
 
 func TestLoadConfig_PartialCLIOverrides(t *testing.T) {
 	// Unit test: verify partial CLI overrides work (some from CLI, some from env)
-	t.Setenv("NEO4J_MCP_TRANSPORT", "stdio")
-	t.Setenv("NEO4J_URI", "bolt://env-host:7687")
-	t.Setenv("NEO4J_USERNAME", "env-user")
-	t.Setenv("NEO4J_PASSWORD", "env-pass")
-	t.Setenv("NEO4J_DATABASE", "env-db")
+	t.Setenv("FLOW_MCP_TRANSPORT", "stdio")
+	t.Setenv("FLOW_URI", "bolt://env-host:7687")
+	t.Setenv("FLOW_USERNAME", "env-user")
+	t.Setenv("FLOW_PASSWORD", "env-pass")
+	t.Setenv("FLOW_DATABASE", "env-db")
 
 	// Only override URI and Username, leave Password and Database from env
 	overrides := &CLIOverrides{
@@ -248,24 +248,24 @@ func TestLoadConfig_PartialCLIOverrides(t *testing.T) {
 
 func TestLoadConfig_InvalidBooleanValues(t *testing.T) {
 	// Unit test: verify invalid boolean values fall back to defaults
-	t.Setenv("NEO4J_MCP_TRANSPORT", "stdio")
-	t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-	t.Setenv("NEO4J_USERNAME", "testuser")
-	t.Setenv("NEO4J_PASSWORD", "testpass")
-	t.Setenv("NEO4J_TELEMETRY", "invalid-value")
-	t.Setenv("NEO4J_READ_ONLY", "not-a-boolean")
+	t.Setenv("FLOW_MCP_TRANSPORT", "stdio")
+	t.Setenv("FLOW_URI", "bolt://localhost:7687")
+	t.Setenv("FLOW_USERNAME", "testuser")
+	t.Setenv("FLOW_PASSWORD", "testpass")
+	t.Setenv("FLOW_TELEMETRY", "invalid-value")
+	t.Setenv("FLOW_READ_ONLY", "not-a-boolean")
 
 	cfg, err := LoadConfig(nil)
 	if err != nil {
 		t.Fatalf("LoadConfig() unexpected error: %v", err)
 	}
 
-	// Invalid NEO4J_TELEMETRY should fall back to default (true)
+	// Invalid FLOW_TELEMETRY should fall back to default (true)
 	if cfg.Telemetry != true {
 		t.Errorf("LoadConfig() Telemetry = %v, want true (default for invalid value)", cfg.Telemetry)
 	}
 
-	// Invalid NEO4J_READ_ONLY should fall back to default (false)
+	// Invalid FLOW_READ_ONLY should fall back to default (false)
 	if cfg.ReadOnly != false {
 		t.Errorf("LoadConfig() ReadOnly = %v, want false (default for invalid value)", cfg.ReadOnly)
 	}
@@ -273,12 +273,12 @@ func TestLoadConfig_InvalidBooleanValues(t *testing.T) {
 
 func TestLoadConfig_ValidBooleanValues(t *testing.T) {
 	// Unit test: verify valid boolean values are parsed correctly
-	t.Setenv("NEO4J_MCP_TRANSPORT", "stdio")
-	t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-	t.Setenv("NEO4J_USERNAME", "testuser")
-	t.Setenv("NEO4J_PASSWORD", "testpass")
-	t.Setenv("NEO4J_TELEMETRY", "false")
-	t.Setenv("NEO4J_READ_ONLY", "true")
+	t.Setenv("FLOW_MCP_TRANSPORT", "stdio")
+	t.Setenv("FLOW_URI", "bolt://localhost:7687")
+	t.Setenv("FLOW_USERNAME", "testuser")
+	t.Setenv("FLOW_PASSWORD", "testpass")
+	t.Setenv("FLOW_TELEMETRY", "false")
+	t.Setenv("FLOW_READ_ONLY", "true")
 
 	cfg, err := LoadConfig(nil)
 	if err != nil {
@@ -298,14 +298,14 @@ func TestLoadConfig_ValidBooleanValues(t *testing.T) {
 
 func TestLoadConfig_ValidIntValue(t *testing.T) {
 	// Set required env variables for basic validation to pass
-	t.Setenv("NEO4J_MCP_TRANSPORT", "stdio")
-	t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-	t.Setenv("NEO4J_USERNAME", "testuser")
-	t.Setenv("NEO4J_PASSWORD", "testpass")
+	t.Setenv("FLOW_MCP_TRANSPORT", "stdio")
+	t.Setenv("FLOW_URI", "bolt://localhost:7687")
+	t.Setenv("FLOW_USERNAME", "testuser")
+	t.Setenv("FLOW_PASSWORD", "testpass")
 
 	t.Run("default value", func(t *testing.T) {
 		// Unset the env var to test default
-		t.Setenv("NEO4J_SCHEMA_SAMPLE_SIZE", "")
+		t.Setenv("FLOW_SCHEMA_SAMPLE_SIZE", "")
 
 		cfg, err := LoadConfig(nil)
 		if err != nil {
@@ -318,7 +318,7 @@ func TestLoadConfig_ValidIntValue(t *testing.T) {
 	})
 
 	t.Run("value from env", func(t *testing.T) {
-		t.Setenv("NEO4J_SCHEMA_SAMPLE_SIZE", "500")
+		t.Setenv("FLOW_SCHEMA_SAMPLE_SIZE", "500")
 
 		cfg, err := LoadConfig(nil)
 		if err != nil {
@@ -331,7 +331,7 @@ func TestLoadConfig_ValidIntValue(t *testing.T) {
 	})
 
 	t.Run("invalid value from env", func(t *testing.T) {
-		t.Setenv("NEO4J_SCHEMA_SAMPLE_SIZE", "invalid")
+		t.Setenv("FLOW_SCHEMA_SAMPLE_SIZE", "invalid")
 
 		cfg, err := LoadConfig(nil)
 		if err != nil {
@@ -443,11 +443,11 @@ func TestLoadConfig_TLS(t *testing.T) {
 		// Generate test certificates dynamically
 		certPath, keyPath := testutil.GenerateTestTLSCertificate(t)
 
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_MCP_TRANSPORT", "http")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_ENABLED", "true")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_CERT_FILE", certPath)
-		t.Setenv("NEO4J_MCP_HTTP_TLS_KEY_FILE", keyPath)
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_MCP_TRANSPORT", "http")
+		t.Setenv("FLOW_MCP_HTTP_TLS_ENABLED", "true")
+		t.Setenv("FLOW_MCP_HTTP_TLS_CERT_FILE", certPath)
+		t.Setenv("FLOW_MCP_HTTP_TLS_KEY_FILE", keyPath)
 
 		cfg, err := LoadConfig(nil)
 		if err != nil {
@@ -466,10 +466,10 @@ func TestLoadConfig_TLS(t *testing.T) {
 	})
 
 	t.Run("TLS disabled by default", func(t *testing.T) {
-		t.Setenv("NEO4J_MCP_TRANSPORT", "stdio")
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_USERNAME", "neo4j")
-		t.Setenv("NEO4J_PASSWORD", "password")
+		t.Setenv("FLOW_MCP_TRANSPORT", "stdio")
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_USERNAME", "neo4j")
+		t.Setenv("FLOW_PASSWORD", "password")
 
 		cfg, err := LoadConfig(nil)
 		if err != nil {
@@ -485,11 +485,11 @@ func TestLoadConfig_TLS(t *testing.T) {
 		// Generate test certificates dynamically
 		certPath, keyPath := testutil.GenerateTestTLSCertificate(t)
 
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_MCP_TRANSPORT", "http")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_ENABLED", "false")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_CERT_FILE", certPath)
-		t.Setenv("NEO4J_MCP_HTTP_TLS_KEY_FILE", keyPath)
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_MCP_TRANSPORT", "http")
+		t.Setenv("FLOW_MCP_HTTP_TLS_ENABLED", "false")
+		t.Setenv("FLOW_MCP_HTTP_TLS_CERT_FILE", certPath)
+		t.Setenv("FLOW_MCP_HTTP_TLS_KEY_FILE", keyPath)
 
 		overrides := &CLIOverrides{
 			TLSEnabled: "true",
@@ -512,10 +512,10 @@ func TestLoadConfig_TLS(t *testing.T) {
 	})
 
 	t.Run("TLS validation error when missing cert file", func(t *testing.T) {
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_MCP_TRANSPORT", "http")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_ENABLED", "true")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_KEY_FILE", "/path/to/key.pem")
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_MCP_TRANSPORT", "http")
+		t.Setenv("FLOW_MCP_HTTP_TLS_ENABLED", "true")
+		t.Setenv("FLOW_MCP_HTTP_TLS_KEY_FILE", "/path/to/key.pem")
 
 		cfg, err := LoadConfig(nil)
 		if err == nil {
@@ -531,11 +531,11 @@ func TestLoadConfig_TLS(t *testing.T) {
 	})
 
 	t.Run("TLS validation error with invalid cert/key files", func(t *testing.T) {
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_MCP_TRANSPORT", "http")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_ENABLED", "true")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_CERT_FILE", "/nonexistent/cert.pem")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_KEY_FILE", "/nonexistent/key.pem")
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_MCP_TRANSPORT", "http")
+		t.Setenv("FLOW_MCP_HTTP_TLS_ENABLED", "true")
+		t.Setenv("FLOW_MCP_HTTP_TLS_CERT_FILE", "/nonexistent/cert.pem")
+		t.Setenv("FLOW_MCP_HTTP_TLS_KEY_FILE", "/nonexistent/key.pem")
 
 		cfg, err := LoadConfig(nil)
 		if err == nil {
@@ -553,9 +553,9 @@ func TestLoadConfig_TLS(t *testing.T) {
 
 func TestLoadConfig_DefaultHTTPPort(t *testing.T) {
 	t.Run("Default port 80 when TLS disabled", func(t *testing.T) {
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_MCP_TRANSPORT", "http")
-		// NEO4J_MCP_HTTP_TLS_ENABLED is not set (defaults to false)
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_MCP_TRANSPORT", "http")
+		// FLOW_MCP_HTTP_TLS_ENABLED is not set (defaults to false)
 
 		cfg, err := LoadConfig(nil)
 		if err != nil {
@@ -570,12 +570,12 @@ func TestLoadConfig_DefaultHTTPPort(t *testing.T) {
 	t.Run("Default port 443 when TLS enabled", func(t *testing.T) {
 		certPath, keyPath := testutil.GenerateTestTLSCertificate(t)
 
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_MCP_TRANSPORT", "http")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_ENABLED", "true")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_CERT_FILE", certPath)
-		t.Setenv("NEO4J_MCP_HTTP_TLS_KEY_FILE", keyPath)
-		// NEO4J_MCP_HTTP_PORT is not set (should default to 443)
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_MCP_TRANSPORT", "http")
+		t.Setenv("FLOW_MCP_HTTP_TLS_ENABLED", "true")
+		t.Setenv("FLOW_MCP_HTTP_TLS_CERT_FILE", certPath)
+		t.Setenv("FLOW_MCP_HTTP_TLS_KEY_FILE", keyPath)
+		// FLOW_MCP_HTTP_PORT is not set (should default to 443)
 
 		cfg, err := LoadConfig(nil)
 		if err != nil {
@@ -590,12 +590,12 @@ func TestLoadConfig_DefaultHTTPPort(t *testing.T) {
 	t.Run("Explicit port overrides default", func(t *testing.T) {
 		certPath, keyPath := testutil.GenerateTestTLSCertificate(t)
 
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_MCP_TRANSPORT", "http")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_ENABLED", "true")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_CERT_FILE", certPath)
-		t.Setenv("NEO4J_MCP_HTTP_TLS_KEY_FILE", keyPath)
-		t.Setenv("NEO4J_MCP_HTTP_PORT", "8443")
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_MCP_TRANSPORT", "http")
+		t.Setenv("FLOW_MCP_HTTP_TLS_ENABLED", "true")
+		t.Setenv("FLOW_MCP_HTTP_TLS_CERT_FILE", certPath)
+		t.Setenv("FLOW_MCP_HTTP_TLS_KEY_FILE", keyPath)
+		t.Setenv("FLOW_MCP_HTTP_PORT", "8443")
 
 		cfg, err := LoadConfig(nil)
 		if err != nil {
@@ -610,12 +610,12 @@ func TestLoadConfig_DefaultHTTPPort(t *testing.T) {
 	t.Run("CLI override for port takes precedence", func(t *testing.T) {
 		certPath, keyPath := testutil.GenerateTestTLSCertificate(t)
 
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_MCP_TRANSPORT", "http")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_ENABLED", "true")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_CERT_FILE", certPath)
-		t.Setenv("NEO4J_MCP_HTTP_TLS_KEY_FILE", keyPath)
-		// Don't set NEO4J_MCP_HTTP_PORT in environment
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_MCP_TRANSPORT", "http")
+		t.Setenv("FLOW_MCP_HTTP_TLS_ENABLED", "true")
+		t.Setenv("FLOW_MCP_HTTP_TLS_CERT_FILE", certPath)
+		t.Setenv("FLOW_MCP_HTTP_TLS_KEY_FILE", keyPath)
+		// Don't set FLOW_MCP_HTTP_PORT in environment
 
 		overrides := &CLIOverrides{
 			Port: "9443",
@@ -634,12 +634,12 @@ func TestLoadConfig_DefaultHTTPPort(t *testing.T) {
 	t.Run("CLI TLS enable changes default port", func(t *testing.T) {
 		certPath, keyPath := testutil.GenerateTestTLSCertificate(t)
 
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_MCP_TRANSPORT", "http")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_ENABLED", "false")
-		t.Setenv("NEO4J_MCP_HTTP_TLS_CERT_FILE", certPath)
-		t.Setenv("NEO4J_MCP_HTTP_TLS_KEY_FILE", keyPath)
-		// Don't set NEO4J_MCP_HTTP_PORT
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_MCP_TRANSPORT", "http")
+		t.Setenv("FLOW_MCP_HTTP_TLS_ENABLED", "false")
+		t.Setenv("FLOW_MCP_HTTP_TLS_CERT_FILE", certPath)
+		t.Setenv("FLOW_MCP_HTTP_TLS_KEY_FILE", keyPath)
+		// Don't set FLOW_MCP_HTTP_PORT
 
 		overrides := &CLIOverrides{
 			TLSEnabled: "true",
@@ -658,11 +658,11 @@ func TestLoadConfig_DefaultHTTPPort(t *testing.T) {
 
 func TestLoadConfig_HTTPAllowedOrigins(t *testing.T) {
 	t.Run("HTTPAllowedOrigins from environment variable", func(t *testing.T) {
-		t.Setenv("NEO4J_MCP_TRANSPORT", "stdio")
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_USERNAME", "neo4j")
-		t.Setenv("NEO4J_PASSWORD", "password")
-		t.Setenv("NEO4J_MCP_HTTP_ALLOWED_ORIGINS", "https://example.com,https://example2.com")
+		t.Setenv("FLOW_MCP_TRANSPORT", "stdio")
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_USERNAME", "neo4j")
+		t.Setenv("FLOW_PASSWORD", "password")
+		t.Setenv("FLOW_MCP_HTTP_ALLOWED_ORIGINS", "https://example.com,https://example2.com")
 
 		cfg, err := LoadConfig(nil)
 		if err != nil {
@@ -675,11 +675,11 @@ func TestLoadConfig_HTTPAllowedOrigins(t *testing.T) {
 	})
 
 	t.Run("HTTPAllowedOrigins with wildcard from environment variable", func(t *testing.T) {
-		t.Setenv("NEO4J_MCP_TRANSPORT", "stdio")
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_USERNAME", "neo4j")
-		t.Setenv("NEO4J_PASSWORD", "password")
-		t.Setenv("NEO4J_MCP_HTTP_ALLOWED_ORIGINS", "*")
+		t.Setenv("FLOW_MCP_TRANSPORT", "stdio")
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_USERNAME", "neo4j")
+		t.Setenv("FLOW_PASSWORD", "password")
+		t.Setenv("FLOW_MCP_HTTP_ALLOWED_ORIGINS", "*")
 
 		cfg, err := LoadConfig(nil)
 		if err != nil {
@@ -692,11 +692,11 @@ func TestLoadConfig_HTTPAllowedOrigins(t *testing.T) {
 	})
 
 	t.Run("HTTPAllowedOrigins empty by default", func(t *testing.T) {
-		t.Setenv("NEO4J_MCP_TRANSPORT", "stdio")
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_USERNAME", "neo4j")
-		t.Setenv("NEO4J_PASSWORD", "password")
-		// Don't set NEO4J_MCP_HTTP_ALLOWED_ORIGINS
+		t.Setenv("FLOW_MCP_TRANSPORT", "stdio")
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_USERNAME", "neo4j")
+		t.Setenv("FLOW_PASSWORD", "password")
+		// Don't set FLOW_MCP_HTTP_ALLOWED_ORIGINS
 
 		cfg, err := LoadConfig(nil)
 		if err != nil {
@@ -709,11 +709,11 @@ func TestLoadConfig_HTTPAllowedOrigins(t *testing.T) {
 	})
 
 	t.Run("HTTPAllowedOrigins CLI override takes precedence over environment", func(t *testing.T) {
-		t.Setenv("NEO4J_MCP_TRANSPORT", "stdio")
-		t.Setenv("NEO4J_URI", "bolt://localhost:7687")
-		t.Setenv("NEO4J_USERNAME", "neo4j")
-		t.Setenv("NEO4J_PASSWORD", "password")
-		t.Setenv("NEO4J_MCP_HTTP_ALLOWED_ORIGINS", "https://env-example.com")
+		t.Setenv("FLOW_MCP_TRANSPORT", "stdio")
+		t.Setenv("FLOW_URI", "bolt://localhost:7687")
+		t.Setenv("FLOW_USERNAME", "neo4j")
+		t.Setenv("FLOW_PASSWORD", "password")
+		t.Setenv("FLOW_MCP_HTTP_ALLOWED_ORIGINS", "https://env-example.com")
 
 		overrides := &CLIOverrides{
 			AllowedOrigins: "https://cli-example.com",

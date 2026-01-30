@@ -1,22 +1,16 @@
-# Contributing to Neo4j MCP
+# Contributing to Flow Microstrategy MCP
 
-Thank you for your interest in contributing to the Neo4j MCP server! This document provides guidelines and information for contributors.
-
-If you're an external contributor you must sign the [https://neo4j.com/developer/contributing-code/#sign-cla](https://neo4j.com/developer/contributing-code/#sign-cla)
-
-## Code of Conduct
-
-Please read and follow these guidelines to ensure a welcoming environment for everyone.
+Thank you for your interest in contributing to the Flow Microstrategy MCP server!
 
 ## Prerequisites
 
 - Go 1.25+ (see `go.mod`)
 - A Neo4j instance with APOC plugin installed.
 
-## Clone the repository (forks are currently disabled)
+## Clone the repository
 
 ```bash
-git clone git@github.com:neo4j/mcp.git && cd mcp
+git clone git@github.com:brunogc-cit/flow-microstrategy-mcp.git && cd flow-microstrategy-mcp
 ```
 
 ## Install Dependencies
@@ -39,9 +33,9 @@ The MCP server supports two transport modes: **STDIO** (default) and **HTTP**. R
 **Required variables:**
 
 ```bash
-export NEO4J_URI="bolt://localhost:7687"
-export NEO4J_USERNAME="neo4j"
-export NEO4J_PASSWORD="password"
+export FLOW_URI="bolt://localhost:7687"
+export FLOW_USERNAME="neo4j"
+export FLOW_PASSWORD="password"
 ```
 
 ### HTTP Mode
@@ -49,26 +43,26 @@ export NEO4J_PASSWORD="password"
 **Required variables:**
 
 ```bash
-export NEO4J_URI="bolt://localhost:7687"
-export NEO4J_MCP_TRANSPORT="http"
+export FLOW_URI="bolt://localhost:7687"
+export FLOW_MCP_TRANSPORT="http"
 ```
 
-**Note:** In HTTP mode, do NOT set `NEO4J_USERNAME` or `NEO4J_PASSWORD`. Credentials come from per-request Basic Auth headers.
+**Note:** In HTTP mode, do NOT set `FLOW_USERNAME` or `FLOW_PASSWORD`. Credentials come from per-request Basic Auth headers.
 
 ### Optional Variables (Both Modes)
 
 ```bash
-export NEO4J_DATABASE="neo4j"          # Default: neo4j
-export NEO4J_READ_ONLY="false"         # Default: false (set to "true" to disable write tools)
-export NEO4J_TELEMETRY="true"          # Default: true
-export NEO4J_LOG_LEVEL="info"          # Default: info (debug, info, notice, warning, error, critical, alert, emergency)
-export NEO4J_LOG_FORMAT="text"         # Default: text (text or json)
-export NEO4J_SCHEMA_SAMPLE_SIZE="100"  # Default: 100 (number of nodes to sample for schema inference)
+export FLOW_DATABASE="neo4j"          # Default: neo4j
+export FLOW_READ_ONLY="false"         # Default: false (set to "true" to disable write tools)
+export FLOW_TELEMETRY="true"          # Default: true
+export FLOW_LOG_LEVEL="info"          # Default: info (debug, info, notice, warning, error, critical, alert, emergency)
+export FLOW_LOG_FORMAT="text"         # Default: text (text or json)
+export FLOW_SCHEMA_SAMPLE_SIZE="100"  # Default: 100 (number of nodes to sample for schema inference)
 
 # HTTP mode specific (ignored in STDIO mode)
-export NEO4J_MCP_HTTP_HOST="127.0.0.1" # Default: 127.0.0.1
-export NEO4J_MCP_HTTP_PORT="80"        # Default: 80
-export NEO4J_MCP_HTTP_ALLOWED_ORIGINS="*" # Default: empty (no CORS)
+export FLOW_MCP_HTTP_HOST="127.0.0.1" # Default: 127.0.0.1
+export FLOW_MCP_HTTP_PORT="80"        # Default: 80
+export FLOW_MCP_HTTP_ALLOWED_ORIGINS="*" # Default: empty (no CORS)
 ```
 
 **Note:** Make sure your local Neo4j instance is running with the correct credentials before testing.
@@ -83,13 +77,13 @@ go test ./... -cover
 go test ./internal/tools -v
 
 # Build binary
-go build -C cmd/neo4j-mcp -o ../../bin/
+go build -C cmd/flow-microstrategy-mcp -o ../../bin/
 
 # Run from source
-go run ./cmd/neo4j-mcp
+go run ./cmd/flow-microstrategy-mcp
 
 # Optional: install (should be run from repo root)
-go install -C cmd/neo4j-mcp
+go install -C cmd/flow-microstrategy-mcp
 ```
 
 ## Mocks
@@ -122,10 +116,10 @@ See `internal/tools/cypher/get_schema_handler_test.go` for a fuller pattern.
 
 ## Testing using the @modelcontextprotocol/inspector:
 
-The Neo4j MCP capabilities can be tested using the `@modelcontextprotocol/inspector`:
+The Flow Microstrategy MCP capabilities can be tested using the `@modelcontextprotocol/inspector`:
 
 ```bash
-npx @modelcontextprotocol/inspector go run ./cmd/neo4j-mcp
+npx @modelcontextprotocol/inspector go run ./cmd/flow-microstrategy-mcp
 ```
 
 ## Testing HTTP Mode
@@ -154,11 +148,11 @@ Start the server in HTTP mode:
 
 ```bash
 # Set up environment
-export NEO4J_URI="bolt://localhost:7687"
-export NEO4J_MCP_TRANSPORT="http"
+export FLOW_URI="bolt://localhost:7687"
+export FLOW_MCP_TRANSPORT="http"
 
 # Run server
-go run ./cmd/neo4j-mcp
+go run ./cmd/flow-microstrategy-mcp
 ```
 
 Test with curl:
@@ -333,8 +327,8 @@ For more information refer to the dedicated guide: [the MCPB build documentation
 
 ### Getting Help
 
-- Check existing [GitHub Issues](https://github.com/neo4j/mcp/issues)
+- Check existing [GitHub Issues](https://github.com/brunogc-cit/flow-microstrategy-mcp/issues)
 - Ask questions in pull request discussions
 - Reach out to maintainers for complex architectural questions
 
-Thank you for contributing to making Neo4j MCP better!
+Thank you for contributing to making Flow Microstrategy MCP better!

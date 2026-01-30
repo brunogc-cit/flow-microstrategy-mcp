@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/neo4j/mcp/internal/auth"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/auth"
 )
 
 const (
@@ -52,7 +52,7 @@ func authMiddleware() func(http.Handler) http.Handler {
 				token = strings.TrimSpace(token)
 
 				if token == "" {
-					w.Header().Set("WWW-Authenticate", `Bearer realm="Neo4j MCP Server"`)
+					w.Header().Set("WWW-Authenticate", `Bearer realm="Flow Microstrategy MCP"`)
 					http.Error(w, "Unauthorized: Bearer token is empty", http.StatusUnauthorized)
 					return
 				}
@@ -67,15 +67,15 @@ func authMiddleware() func(http.Handler) http.Handler {
 			user, pass, ok := r.BasicAuth()
 			if !ok {
 				// No credentials provided - reject request
-				w.Header().Add("WWW-Authenticate", `Basic realm="Neo4j MCP Server"`)
-				w.Header().Add("WWW-Authenticate", `Bearer realm="Neo4j MCP Server"`)
+				w.Header().Add("WWW-Authenticate", `Basic realm="Flow Microstrategy MCP"`)
+				w.Header().Add("WWW-Authenticate", `Bearer realm="Flow Microstrategy MCP"`)
 				http.Error(w, "Unauthorized: Basic or Bearer authentication required", http.StatusUnauthorized)
 				return
 			}
 
 			// Validate credentials are not empty (consistent with bearer token validation)
 			if user == "" || pass == "" {
-				w.Header().Set("WWW-Authenticate", `Basic realm="Neo4j MCP Server"`)
+				w.Header().Set("WWW-Authenticate", `Basic realm="Flow Microstrategy MCP"`)
 				http.Error(w, "Unauthorized: Username and password cannot be empty", http.StatusUnauthorized)
 				return
 			}

@@ -6,8 +6,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/neo4j/mcp/internal/tools/cypher"
-	"github.com/neo4j/mcp/test/integration/helpers"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools/cypher"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/test/integration/helpers"
 )
 
 type SchemaItem struct {

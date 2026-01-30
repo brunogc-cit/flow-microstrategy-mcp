@@ -1,8 +1,8 @@
 package tools
 
 import (
-	"github.com/neo4j/mcp/internal/analytics"
-	"github.com/neo4j/mcp/internal/database"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/analytics"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/database"
 )
 
 // ToolDependencies contains all dependencies needed by tools

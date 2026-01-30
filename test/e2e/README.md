@@ -1,6 +1,6 @@
 # End-to-End (E2E) Tests
 
-End-to-end tests for the Neo4j MCP server that test the complete server lifecycle including compilation, MCP protocol communication, and tool execution using a shared Neo4j container (includes APOC + GDS).
+End-to-end tests for the Flow Microstrategy MCP server that test the complete server lifecycle including compilation, MCP protocol communication, and tool execution using a shared Neo4j container (includes APOC + GDS).
 
 ## Quick Start
 
@@ -12,10 +12,10 @@ func TestMyE2EFeature(t *testing.T) {
     ctx := context.Background()
     cfg := dbs.GetDriverConf()
     args := []string{
-        "--neo4j-uri", cfg.URI,
-        "--neo4j-username", cfg.Username,
-        "--neo4j-password", cfg.Password,
-        "--neo4j-database", cfg.Database,
+        "--flow-uri", cfg.URI,
+        "--flow-username", cfg.Username,
+        "--flow-password", cfg.Password,
+        "--flow-database", cfg.Database,
     }
 
     mcpClient, err := client.NewStdioMCPClient(server, []string{}, args...)
@@ -167,4 +167,4 @@ go test -tags=e2e ./test/e2e/... -v
 - Test data is automatically tagged with unique labels and cleaned up after each test
 - Server binary is compiled once in `TestMain`, stored in a Temporary Directory and reused across all tests
 - MCP client connections are per-test and must be properly closed
-- Import the helpers package: `"github.com/neo4j/mcp/test/e2e/helpers"`
+- Import the helpers package: `"github.com/brunogc-cit/flow-microstrategy-mcp/test/e2e/helpers"`

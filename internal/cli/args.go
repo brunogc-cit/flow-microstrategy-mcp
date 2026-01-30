@@ -11,55 +11,57 @@ import (
 // osExit is a variable that can be mocked in tests
 var osExit = os.Exit
 
-const helpText = `neo4j-mcp - Neo4j Model Context Protocol Server
+const helpText = `flow-microstrategy-mcp - Flow Microstrategy Model Context Protocol Server
+
+Powered by CI&T Flow - Built on top of Neo4j MCP.
 
 Usage:
-  neo4j-mcp [OPTIONS]
+  flow-microstrategy-mcp [OPTIONS]
 
 Options:
   -h, --help                          Show this help message
   -v, --version                       Show version information
-  --neo4j-uri <URI>                   Neo4j connection URI (overrides environment variable NEO4J_URI)
-  --neo4j-username <USERNAME>         Database username (overrides environment variable NEO4J_USERNAME)
-  --neo4j-password <PASSWORD>         Database password (overrides environment variable NEO4J_PASSWORD)
-  --neo4j-database <DATABASE>         Database name (overrides environment variable NEO4J_DATABASE)
-  --neo4j-read-only <BOOLEAN>         Enable read-only mode: true or false (overrides environment variable NEO4J_READ_ONLY)
-  --neo4j-telemetry <BOOLEAN>         Enable telemetry: true or false (overrides environment variable NEO4J_TELEMETRY)
-  --neo4j-schema-sample-size <INT>    Number of nodes to sample for schema inference (overrides environment variable NEO4J_SCHEMA_SAMPLE_SIZE)
-  --neo4j-transport-mode <MODE>       MCP Transport mode (e.g., 'stdio', 'http') (overrides environment variable NEO4J_MCP_TRANSPORT)
-  --neo4j-http-port <PORT>            HTTP server port (overrides environment variable NEO4J_MCP_HTTP_PORT)
-  --neo4j-http-host <HOST>            HTTP server host (overrides environment variable NEO4J_MCP_HTTP_HOST)
-  --neo4j-http-allowed-origins <ORIGINS> Comma-separated list of allowed CORS origins (overrides environment variable NEO4J_MCP_HTTP_ALLOWED_ORIGINS)
-  --neo4j-http-tls-enabled <BOOLEAN>  Enable TLS/HTTPS for HTTP server: true or false (overrides environment variable NEO4J_MCP_HTTP_TLS_ENABLED)
-  --neo4j-http-tls-cert-file <PATH>   Path to TLS certificate file (overrides environment variable NEO4J_MCP_HTTP_TLS_CERT_FILE)
-  --neo4j-http-tls-key-file <PATH>    Path to TLS private key file (overrides environment variable NEO4J_MCP_HTTP_TLS_KEY_FILE)
+  --flow-uri <URI>                    Neo4j connection URI (overrides environment variable FLOW_URI)
+  --flow-username <USERNAME>          Database username (overrides environment variable FLOW_USERNAME)
+  --flow-password <PASSWORD>          Database password (overrides environment variable FLOW_PASSWORD)
+  --flow-database <DATABASE>          Database name (overrides environment variable FLOW_DATABASE)
+  --flow-read-only <BOOLEAN>          Enable read-only mode: true or false (overrides environment variable FLOW_READ_ONLY)
+  --flow-telemetry <BOOLEAN>          Enable telemetry: true or false (overrides environment variable FLOW_TELEMETRY)
+  --flow-schema-sample-size <INT>     Number of nodes to sample for schema inference (overrides environment variable FLOW_SCHEMA_SAMPLE_SIZE)
+  --flow-transport-mode <MODE>        MCP Transport mode (e.g., 'stdio', 'http') (overrides environment variable FLOW_MCP_TRANSPORT)
+  --flow-http-port <PORT>             HTTP server port (overrides environment variable FLOW_MCP_HTTP_PORT)
+  --flow-http-host <HOST>             HTTP server host (overrides environment variable FLOW_MCP_HTTP_HOST)
+  --flow-http-allowed-origins <ORIGINS> Comma-separated list of allowed CORS origins (overrides environment variable FLOW_MCP_HTTP_ALLOWED_ORIGINS)
+  --flow-http-tls-enabled <BOOLEAN>   Enable TLS/HTTPS for HTTP server: true or false (overrides environment variable FLOW_MCP_HTTP_TLS_ENABLED)
+  --flow-http-tls-cert-file <PATH>    Path to TLS certificate file (overrides environment variable FLOW_MCP_HTTP_TLS_CERT_FILE)
+  --flow-http-tls-key-file <PATH>     Path to TLS private key file (overrides environment variable FLOW_MCP_HTTP_TLS_KEY_FILE)
 
 Required Environment Variables:
-  NEO4J_URI       Neo4j database URI
-  NEO4J_USERNAME  Database username
-  NEO4J_PASSWORD  Database password
+  FLOW_URI        Neo4j database URI
+  FLOW_USERNAME   Database username
+  FLOW_PASSWORD   Database password
 
 Optional Environment Variables:
-  NEO4J_DATABASE  Database name (default: neo4j)
-  NEO4J_TELEMETRY Enable/disable telemetry (default: true)
-  NEO4J_READ_ONLY Enable read-only mode (default: false)
-  NEO4J_SCHEMA_SAMPLE_SIZE Number of nodes to sample for schema inference (default: 100)
-  NEO4J_MCP_TRANSPORT MCP Transport mode (e.g., 'stdio', 'http') (default: stdio)
-  NEO4J_MCP_HTTP_PORT HTTP server port (default: 443 with TLS, 80 without TLS)
-  NEO4J_MCP_HTTP_HOST HTTP server host (default: 127.0.0.1)
-  NEO4J_MCP_HTTP_ALLOWED_ORIGINS Comma-separated list of allowed CORS origins (optional)
-  NEO4J_MCP_HTTP_TLS_ENABLED Enable TLS/HTTPS for HTTP server (default: false)
-  NEO4J_MCP_HTTP_TLS_CERT_FILE Path to TLS certificate file (required when TLS is enabled)
-  NEO4J_MCP_HTTP_TLS_KEY_FILE Path to TLS private key file (required when TLS is enabled)
+  FLOW_DATABASE   Database name (default: neo4j)
+  FLOW_TELEMETRY  Enable/disable telemetry (default: true)
+  FLOW_READ_ONLY  Enable read-only mode (default: false)
+  FLOW_SCHEMA_SAMPLE_SIZE Number of nodes to sample for schema inference (default: 100)
+  FLOW_MCP_TRANSPORT MCP Transport mode (e.g., 'stdio', 'http') (default: stdio)
+  FLOW_MCP_HTTP_PORT HTTP server port (default: 443 with TLS, 80 without TLS)
+  FLOW_MCP_HTTP_HOST HTTP server host (default: 127.0.0.1)
+  FLOW_MCP_HTTP_ALLOWED_ORIGINS Comma-separated list of allowed CORS origins (optional)
+  FLOW_MCP_HTTP_TLS_ENABLED Enable TLS/HTTPS for HTTP server (default: false)
+  FLOW_MCP_HTTP_TLS_CERT_FILE Path to TLS certificate file (required when TLS is enabled)
+  FLOW_MCP_HTTP_TLS_KEY_FILE Path to TLS private key file (required when TLS is enabled)
 
 Examples:
   # Using environment variables
-  NEO4J_URI=bolt://localhost:7687 NEO4J_USERNAME=neo4j NEO4J_PASSWORD=password neo4j-mcp
+  FLOW_URI=bolt://localhost:7687 FLOW_USERNAME=neo4j FLOW_PASSWORD=password flow-microstrategy-mcp
 
   # Using CLI flags (takes precedence over environment variables)
-  neo4j-mcp --neo4j-uri bolt://localhost:7687 --neo4j-username neo4j --neo4j-password password
+  flow-microstrategy-mcp --flow-uri bolt://localhost:7687 --flow-username neo4j --flow-password password
 
-For more information, visit: https://github.com/neo4j/mcp
+For more information, visit: https://github.com/brunogc-cit/flow-microstrategy-mcp
 `
 
 // Args holds configuration values parsed from command-line flags
@@ -83,57 +85,57 @@ type Args struct {
 // this is a list of known configuration flags to be skipped in HandleArgs
 // add new config flags here as needed
 var argsSlice = []string{
-	"--neo4j-uri",
-	"--neo4j-username",
-	"--neo4j-password",
-	"--neo4j-database",
-	"--neo4j-read-only",
-	"--neo4j-telemetry",
-	"--neo4j-schema-sample-size",
-	"--neo4j-transport-mode",
-	"--neo4j-http-port",
-	"--neo4j-http-host",
-	"--neo4j-http-allowed-origins",
-	"--neo4j-http-tls-enabled",
-	"--neo4j-http-tls-cert-file",
-	"--neo4j-http-tls-key-file",
+	"--flow-uri",
+	"--flow-username",
+	"--flow-password",
+	"--flow-database",
+	"--flow-read-only",
+	"--flow-telemetry",
+	"--flow-schema-sample-size",
+	"--flow-transport-mode",
+	"--flow-http-port",
+	"--flow-http-host",
+	"--flow-http-allowed-origins",
+	"--flow-http-tls-enabled",
+	"--flow-http-tls-cert-file",
+	"--flow-http-tls-key-file",
 }
 
 // ParseConfigFlags parses CLI flags and returns configuration values.
 // It should be called after HandleArgs to ensure help/version flags are processed first.
 func ParseConfigFlags() *Args {
-	neo4jURI := flag.String("neo4j-uri", "", "Neo4j connection URI (overrides NEO4J_URI env var)")
-	neo4jUsername := flag.String("neo4j-username", "", "Neo4j username (overrides NEO4J_USERNAME env var)")
-	neo4jPassword := flag.String("neo4j-password", "", "Neo4j password (overrides NEO4J_PASSWORD env var)")
-	neo4jDatabase := flag.String("neo4j-database", "", "Neo4j database name (overrides NEO4J_DATABASE env var)")
-	neo4jReadOnly := flag.String("neo4j-read-only", "", "Enable read-only mode: true or false (overrides NEO4J_READ_ONLY env var)")
-	neo4jTelemetry := flag.String("neo4j-telemetry", "", "Enable telemetry: true or false (overrides NEO4J_TELEMETRY env var)")
-	neo4jSchemaSampleSize := flag.String("neo4j-schema-sample-size", "", "Number of nodes to sample for schema inference (overrides NEO4J_SCHEMA_SAMPLE_SIZE env var)")
-	neo4jTransportMode := flag.String("neo4j-transport-mode", "", "MCP Transport mode (e.g., 'stdio', 'http') (overrides NEO4J_MCP_TRANSPORT env var)")
-	neo4jHTTPPort := flag.String("neo4j-http-port", "", "HTTP server port (overrides NEO4J_MCP_HTTP_PORT env var)")
-	neo4jHTTPHost := flag.String("neo4j-http-host", "", "HTTP server host (overrides NEO4J_MCP_HTTP_HOST env var)")
-	neo4jHTTPAllowedOrigins := flag.String("neo4j-http-allowed-origins", "", "Comma-separated list of allowed CORS origins (overrides NEO4J_MCP_HTTP_ALLOWED_ORIGINS env var)")
-	neo4jHTTPTLSEnabled := flag.String("neo4j-http-tls-enabled", "", "Enable TLS/HTTPS for HTTP server: true or false (overrides NEO4J_MCP_HTTP_TLS_ENABLED env var)")
-	neo4jHTTPTLSCertFile := flag.String("neo4j-http-tls-cert-file", "", "Path to TLS certificate file (overrides NEO4J_MCP_HTTP_TLS_CERT_FILE env var)")
-	neo4jHTTPTLSKeyFile := flag.String("neo4j-http-tls-key-file", "", "Path to TLS private key file (overrides NEO4J_MCP_HTTP_TLS_KEY_FILE env var)")
+	flowURI := flag.String("flow-uri", "", "Neo4j connection URI (overrides FLOW_URI env var)")
+	flowUsername := flag.String("flow-username", "", "Neo4j username (overrides FLOW_USERNAME env var)")
+	flowPassword := flag.String("flow-password", "", "Neo4j password (overrides FLOW_PASSWORD env var)")
+	flowDatabase := flag.String("flow-database", "", "Neo4j database name (overrides FLOW_DATABASE env var)")
+	flowReadOnly := flag.String("flow-read-only", "", "Enable read-only mode: true or false (overrides FLOW_READ_ONLY env var)")
+	flowTelemetry := flag.String("flow-telemetry", "", "Enable telemetry: true or false (overrides FLOW_TELEMETRY env var)")
+	flowSchemaSampleSize := flag.String("flow-schema-sample-size", "", "Number of nodes to sample for schema inference (overrides FLOW_SCHEMA_SAMPLE_SIZE env var)")
+	flowTransportMode := flag.String("flow-transport-mode", "", "MCP Transport mode (e.g., 'stdio', 'http') (overrides FLOW_MCP_TRANSPORT env var)")
+	flowHTTPPort := flag.String("flow-http-port", "", "HTTP server port (overrides FLOW_MCP_HTTP_PORT env var)")
+	flowHTTPHost := flag.String("flow-http-host", "", "HTTP server host (overrides FLOW_MCP_HTTP_HOST env var)")
+	flowHTTPAllowedOrigins := flag.String("flow-http-allowed-origins", "", "Comma-separated list of allowed CORS origins (overrides FLOW_MCP_HTTP_ALLOWED_ORIGINS env var)")
+	flowHTTPTLSEnabled := flag.String("flow-http-tls-enabled", "", "Enable TLS/HTTPS for HTTP server: true or false (overrides FLOW_MCP_HTTP_TLS_ENABLED env var)")
+	flowHTTPTLSCertFile := flag.String("flow-http-tls-cert-file", "", "Path to TLS certificate file (overrides FLOW_MCP_HTTP_TLS_CERT_FILE env var)")
+	flowHTTPTLSKeyFile := flag.String("flow-http-tls-key-file", "", "Path to TLS private key file (overrides FLOW_MCP_HTTP_TLS_KEY_FILE env var)")
 
 	flag.Parse()
 
 	return &Args{
-		URI:                *neo4jURI,
-		Username:           *neo4jUsername,
-		Password:           *neo4jPassword,
-		Database:           *neo4jDatabase,
-		ReadOnly:           *neo4jReadOnly,
-		Telemetry:          *neo4jTelemetry,
-		SchemaSampleSize:   *neo4jSchemaSampleSize,
-		TransportMode:      *neo4jTransportMode,
-		HTTPPort:           *neo4jHTTPPort,
-		HTTPHost:           *neo4jHTTPHost,
-		HTTPAllowedOrigins: *neo4jHTTPAllowedOrigins,
-		HTTPTLSEnabled:     *neo4jHTTPTLSEnabled,
-		HTTPTLSCertFile:    *neo4jHTTPTLSCertFile,
-		HTTPTLSKeyFile:     *neo4jHTTPTLSKeyFile,
+		URI:                *flowURI,
+		Username:           *flowUsername,
+		Password:           *flowPassword,
+		Database:           *flowDatabase,
+		ReadOnly:           *flowReadOnly,
+		Telemetry:          *flowTelemetry,
+		SchemaSampleSize:   *flowSchemaSampleSize,
+		TransportMode:      *flowTransportMode,
+		HTTPPort:           *flowHTTPPort,
+		HTTPHost:           *flowHTTPHost,
+		HTTPAllowedOrigins: *flowHTTPAllowedOrigins,
+		HTTPTLSEnabled:     *flowHTTPTLSEnabled,
+		HTTPTLSCertFile:    *flowHTTPTLSCertFile,
+		HTTPTLSKeyFile:     *flowHTTPTLSKeyFile,
 	}
 }
 
@@ -148,7 +150,7 @@ func HandleArgs(version string) {
 
 	flags := make(map[string]bool)
 	var err error
-	i := 1 // we start from 1 because os.Args[0] is the program name ("neo4j-mcp") - not a flag
+	i := 1 // we start from 1 because os.Args[0] is the program name ("flow-microstrategy-mcp") - not a flag
 
 	for i < len(os.Args) {
 		arg := os.Args[i]
@@ -204,7 +206,7 @@ func HandleArgs(version string) {
 	}
 
 	if flags["version"] {
-		fmt.Printf("neo4j-mcp version: %s\n", version)
+		fmt.Printf("flow-microstrategy-mcp version: %s\n", version)
 		osExit(0)
 	}
 }

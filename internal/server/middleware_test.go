@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/mark3labs/mcp-go/server"
-	analytics_mocks "github.com/neo4j/mcp/internal/analytics/mocks"
-	"github.com/neo4j/mcp/internal/auth"
-	"github.com/neo4j/mcp/internal/config"
-	db_mocks "github.com/neo4j/mcp/internal/database/mocks"
+	analytics_mocks "github.com/brunogc-cit/flow-microstrategy-mcp/internal/analytics/mocks"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/auth"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/config"
+	db_mocks "github.com/brunogc-cit/flow-microstrategy-mcp/internal/database/mocks"
 	"go.uber.org/mock/gomock"
 )
 

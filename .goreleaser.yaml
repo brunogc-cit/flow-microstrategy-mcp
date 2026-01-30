@@ -1,5 +1,5 @@
 version: 2
-project_name: neo4j-mcp
+project_name: flow-microstrategy-mcp
 before:
   hooks:
     - go mod tidy
@@ -14,7 +14,7 @@ builds:
       - linux
       - windows
       - darwin
-    main: ./cmd/neo4j-mcp
+    main: ./cmd/flow-microstrategy-mcp
 
 archives:
   - formats: ["tar.gz"]
@@ -49,7 +49,7 @@ notarize:
       #
       # Default: the project name.
       ids:
-        - neo4j-mcp
+        - flow-microstrategy-mcp
 
       sign:
         # The .p12 certificate file path or its base64'd contents.

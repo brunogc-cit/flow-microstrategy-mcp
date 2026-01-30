@@ -1,4 +1,4 @@
-module github.com/neo4j/mcp
+module github.com/brunogc-cit/flow-microstrategy-mcp
 
 go 1.25.3
 

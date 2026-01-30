@@ -8,7 +8,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/neo4j/mcp/test/e2e/helpers"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/test/e2e/helpers"
 )
 
 func TestSeverLifecycleMCPE2E(t *testing.T) {
@@ -20,10 +20,10 @@ func TestSeverLifecycleMCPE2E(t *testing.T) {
 
 		cfg := dbs.GetDriverConf()
 		args := []string{
-			"--neo4j-uri", cfg.URI,
-			"--neo4j-username", cfg.Username,
-			"--neo4j-password", cfg.Password,
-			"--neo4j-database", cfg.Database,
+			"--flow-uri", cfg.URI,
+			"--flow-username", cfg.Username,
+			"--flow-password", cfg.Password,
+			"--flow-database", cfg.Database,
 		}
 
 		mcpClient, err := client.NewStdioMCPClient(server, []string{}, args...)
@@ -38,7 +38,7 @@ func TestSeverLifecycleMCPE2E(t *testing.T) {
 			t.Fatalf("failed to initialize MCP server: %v", err)
 		}
 
-		expectedServerInfoName := "neo4j-mcp"
+		expectedServerInfoName := "flow-microstrategy-mcp"
 		if initializeResponse.ServerInfo.Name != expectedServerInfoName {
 			t.Fatalf("expected server name returned from initialize request to be: %s, but found: %s", expectedServerInfoName, initializeResponse.ServerInfo.Name)
 		}

@@ -1,6 +1,6 @@
-# TLS/HTTPS Setup for Neo4j MCP Server
+# TLS/HTTPS Setup for Flow Microstrategy MCP Server
 
-This guide covers TLS/HTTPS configuration for the Neo4j MCP server, including certificate generation, testing, and production deployment.
+This guide covers TLS/HTTPS configuration for the Flow Microstrategy MCP server, including certificate generation, testing, and production deployment.
 
 ## Important Certificate Requirements
 
@@ -57,36 +57,36 @@ openssl req -x509 -newkey rsa:4096 \
 
 ```bash
 # Default port 443 when TLS is enabled
-./bin/neo4j-mcp \
-  --neo4j-uri bolt://localhost:7687 \
-  --neo4j-transport-mode http \
-  --neo4j-http-tls-enabled true \
-  --neo4j-http-tls-cert-file cert.pem \
-  --neo4j-http-tls-key-file key.pem
+./bin/flow-microstrategy-mcp \
+  --flow-uri bolt://localhost:7687 \
+  --flow-transport-mode http \
+  --flow-http-tls-enabled true \
+  --flow-http-tls-cert-file cert.pem \
+  --flow-http-tls-key-file key.pem
 
 # Or specify a custom port like 8443
-./bin/neo4j-mcp \
-  --neo4j-uri bolt://localhost:7687 \
-  --neo4j-transport-mode http \
-  --neo4j-http-port 8443 \
-  --neo4j-http-tls-enabled true \
-  --neo4j-http-tls-cert-file cert.pem \
-  --neo4j-http-tls-key-file key.pem
+./bin/flow-microstrategy-mcp \
+  --flow-uri bolt://localhost:7687 \
+  --flow-transport-mode http \
+  --flow-http-port 8443 \
+  --flow-http-tls-enabled true \
+  --flow-http-tls-cert-file cert.pem \
+  --flow-http-tls-key-file key.pem
 ```
 
 Or using environment variables:
 
 ```bash
-export NEO4J_URI="bolt://localhost:7687"
-# Note: In HTTP mode, NEO4J_USERNAME and NEO4J_PASSWORD are not used
+export FLOW_URI="bolt://localhost:7687"
+# Note: In HTTP mode, FLOW_USERNAME and FLOW_PASSWORD are not used
 # Credentials come from per-request Basic Auth headers
-export NEO4J_MCP_TRANSPORT="http"
-export NEO4J_MCP_HTTP_TLS_ENABLED="true"
-export NEO4J_MCP_HTTP_TLS_CERT_FILE="cert.pem"
-export NEO4J_MCP_HTTP_TLS_KEY_FILE="key.pem"
-# NEO4J_MCP_HTTP_PORT defaults to 443 when TLS is enabled
+export FLOW_MCP_TRANSPORT="http"
+export FLOW_MCP_HTTP_TLS_ENABLED="true"
+export FLOW_MCP_HTTP_TLS_CERT_FILE="cert.pem"
+export FLOW_MCP_HTTP_TLS_KEY_FILE="key.pem"
+# FLOW_MCP_HTTP_PORT defaults to 443 when TLS is enabled
 
-./bin/neo4j-mcp
+./bin/flow-microstrategy-mcp
 ```
 
 ### 3. Test the Server
@@ -171,7 +171,7 @@ openssl s_client -connect 127.0.0.1:8443 </dev/null 2>/dev/null | grep "Cipher"
 - **`-k` flag**: Skips certificate verification (needed for self-signed certificates)
 - **Basic Auth**: All requests require `-u username:password`
 - **Content-Type**: MCP requests need `Content-Type: application/json` header
-- **Port**: Default port is 443 when TLS is enabled, 80 when TLS is disabled (configurable via `--neo4j-http-port` or `NEO4J_MCP_HTTP_PORT`)
+- **Port**: Default port is 443 when TLS is enabled, 80 when TLS is disabled (configurable via `--flow-http-port` or `FLOW_MCP_HTTP_PORT`)
 
 ## Production Use
 
@@ -182,14 +182,14 @@ For production, use a proper certificate from a Certificate Authority (e.g., Let
 ```bash
 # With Let's Encrypt certificate (certificates include proper domain names)
 # Note: In HTTP mode, username/password are not needed here - credentials come from per-request Basic Auth
-./bin/neo4j-mcp \
-  --neo4j-uri bolt://localhost:7687 \
-  --neo4j-transport-mode http \
-  --neo4j-http-host 127.0.0.1 \
-  --neo4j-http-port 443 \
-  --neo4j-http-tls-enabled true \
-  --neo4j-http-tls-cert-file /etc/letsencrypt/live/your-domain.com/fullchain.pem \
-  --neo4j-http-tls-key-file /etc/letsencrypt/live/your-domain.com/privkey.pem
+./bin/flow-microstrategy-mcp \
+  --flow-uri bolt://localhost:7687 \
+  --flow-transport-mode http \
+  --flow-http-host 127.0.0.1 \
+  --flow-http-port 443 \
+  --flow-http-tls-enabled true \
+  --flow-http-tls-cert-file /etc/letsencrypt/live/your-domain.com/fullchain.pem \
+  --flow-http-tls-key-file /etc/letsencrypt/live/your-domain.com/privkey.pem
 ```
 
 Then clients can connect using the domain name without `-k` flag:

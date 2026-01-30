@@ -13,13 +13,13 @@ version: "3"
 tasks:
   build:
     cmds:
-      - go build -C cmd/neo4j-mcp -o ../../bin/ {{.CLI_ARGS}}
+      - go build -C cmd/flow-microstrategy-mcp -o ../../bin/ {{.CLI_ARGS}}
   run:
     cmds:
-      - go run ./cmd/neo4j-mcp
+      - go run ./cmd/flow-microstrategy-mcp
   run:compiled:
     cmds:
-      - ./bin/neo4j-mcp {{.CLI_ARGS}}
+      - ./bin/flow-microstrategy-mcp {{.CLI_ARGS}}
   generate:
     cmds:
       - go generate ./...
@@ -44,7 +44,7 @@ tasks:
       - golangci-lint run
   inspect:
     cmds:
-      - npx @modelcontextprotocol/inspector go run ./cmd/neo4j-mcp
+      - npx @modelcontextprotocol/inspector go run ./cmd/flow-microstrategy-mcp
   interactive-client:
     cmds:
-      - go run ./client/... bin/neo4j-mcp
+      - go run ./client/... bin/flow-microstrategy-mcp

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/neo4j/mcp/internal/tools/cypher"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools/cypher"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

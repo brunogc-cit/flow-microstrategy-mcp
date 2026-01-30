@@ -9,9 +9,9 @@ import (
 
 const (
 	testVersion     = "1.0.0"
-	testProgramName = "neo4j-mcp"
-	testHelpText    = "neo4j-mcp - Neo4j Model Context Protocol Server"
-	testVersionText = "neo4j-mcp version: 1.0.0"
+	testProgramName = "flow-microstrategy-mcp"
+	testHelpText    = "flow-microstrategy-mcp - Flow Microstrategy Model Context Protocol Server"
+	testVersionText = "flow-microstrategy-mcp version: 1.0.0"
 )
 
 // captureOutput temporarily redirects stdout and stderr to capture output.
@@ -130,140 +130,140 @@ func TestHandleArgs(t *testing.T) {
 		},
 		{
 			name:             "neo4j-uri configuration flag",
-			args:             []string{testProgramName, "--neo4j-uri", "bolt://localhost:7687"},
+			args:             []string{testProgramName, "--flow-uri", "bolt://localhost:7687"},
 			version:          testVersion,
 			expectedExitCode: -1, // Should not exit, flag is allowed
 		},
 		{
 			name:             "multiple configuration flags",
-			args:             []string{testProgramName, "--neo4j-uri", "bolt://localhost:7687", "--neo4j-username", "user"},
+			args:             []string{testProgramName, "--flow-uri", "bolt://localhost:7687", "--flow-username", "user"},
 			version:          testVersion,
 			expectedExitCode: -1, // Should not exit, flags are allowed
 		},
 		{
 			name:             "configuration flag missing value - at end",
-			args:             []string{testProgramName, "--neo4j-uri"},
+			args:             []string{testProgramName, "--flow-uri"},
 			version:          testVersion,
 			expectedExitCode: 1,
-			expectedStderr:   "--neo4j-uri requires a value",
+			expectedStderr:   "--flow-uri requires a value",
 		},
 		{
 			name:             "configuration flag missing value - followed by another flag",
-			args:             []string{testProgramName, "--neo4j-uri", "--neo4j-username", "user"},
+			args:             []string{testProgramName, "--flow-uri", "--flow-username", "user"},
 			version:          testVersion,
 			expectedExitCode: 1,
-			expectedStderr:   "--neo4j-uri requires a value (got flag --neo4j-username instead)",
+			expectedStderr:   "--flow-uri requires a value (got flag --flow-username instead)",
 		},
 		{
 			name:             "neo4j-password missing value",
-			args:             []string{testProgramName, "--neo4j-password"},
+			args:             []string{testProgramName, "--flow-password"},
 			version:          testVersion,
 			expectedExitCode: 1,
-			expectedStderr:   "--neo4j-password requires a value",
+			expectedStderr:   "--flow-password requires a value",
 		},
 		{
 			name:             "neo4j-database missing value - followed by another flag",
-			args:             []string{testProgramName, "--neo4j-database", "--neo4j-uri", "bolt://localhost"},
+			args:             []string{testProgramName, "--flow-database", "--flow-uri", "bolt://localhost"},
 			version:          testVersion,
 			expectedExitCode: 1,
-			expectedStderr:   "--neo4j-database requires a value (got flag --neo4j-uri instead)",
+			expectedStderr:   "--flow-database requires a value (got flag --flow-uri instead)",
 		},
 		{
 			name:             "configuration flags with valid values",
-			args:             []string{testProgramName, "--neo4j-uri", "bolt://localhost:7687", "--neo4j-username", "neo4j", "--neo4j-password", "password", "--neo4j-database", "neo4j"},
+			args:             []string{testProgramName, "--flow-uri", "bolt://localhost:7687", "--flow-username", "neo4j", "--flow-password", "password", "--flow-database", "neo4j"},
 			version:          testVersion,
 			expectedExitCode: -1, // Should not exit
 		},
 		{
 			name:             "schema sample size flag with valid value",
-			args:             []string{testProgramName, "--neo4j-schema-sample-size", "500"},
+			args:             []string{testProgramName, "--flow-schema-sample-size", "500"},
 			version:          testVersion,
 			expectedExitCode: -1, // Should not exit
 		},
 		{
 			name:             "schema sample size flag missing value",
-			args:             []string{testProgramName, "--neo4j-schema-sample-size"},
+			args:             []string{testProgramName, "--flow-schema-sample-size"},
 			version:          testVersion,
 			expectedExitCode: 1,
-			expectedStderr:   "--neo4j-schema-sample-size requires a value",
+			expectedStderr:   "--flow-schema-sample-size requires a value",
 		},
 		{
 			name:             "transport mode flag valid value",
-			args:             []string{testProgramName, "--neo4j-transport-mode", "http"},
+			args:             []string{testProgramName, "--flow-transport-mode", "http"},
 			version:          testVersion,
 			expectedExitCode: -1, // Should not exit, flag is allowed
 		},
 		{
 			name:             "transport mode flag missing value",
-			args:             []string{testProgramName, "--neo4j-transport-mode"},
+			args:             []string{testProgramName, "--flow-transport-mode"},
 			version:          testVersion,
 			expectedExitCode: 1,
-			expectedStderr:   "--neo4j-transport-mode requires a value",
+			expectedStderr:   "--flow-transport-mode requires a value",
 		},
 		{
 			name:             "transport mode flag missing value followed by another flag",
-			args:             []string{testProgramName, "--neo4j-transport-mode", "--neo4j-uri", "bolt://localhost:7687"},
+			args:             []string{testProgramName, "--flow-transport-mode", "--flow-uri", "bolt://localhost:7687"},
 			version:          testVersion,
 			expectedExitCode: 1,
-			expectedStderr:   "--neo4j-transport-mode requires a value (got flag --neo4j-uri instead)",
+			expectedStderr:   "--flow-transport-mode requires a value (got flag --flow-uri instead)",
 		},
 		{
 			name:             "http tls enabled flag with valid value",
-			args:             []string{testProgramName, "--neo4j-http-tls-enabled", "true"},
+			args:             []string{testProgramName, "--flow-http-tls-enabled", "true"},
 			version:          testVersion,
 			expectedExitCode: -1, // Should not exit, flag is allowed
 		},
 		{
 			name:             "http tls enabled flag missing value",
-			args:             []string{testProgramName, "--neo4j-http-tls-enabled"},
+			args:             []string{testProgramName, "--flow-http-tls-enabled"},
 			version:          testVersion,
 			expectedExitCode: 1,
-			expectedStderr:   "--neo4j-http-tls-enabled requires a value",
+			expectedStderr:   "--flow-http-tls-enabled requires a value",
 		},
 		{
 			name:             "http tls cert file flag with valid value",
-			args:             []string{testProgramName, "--neo4j-http-tls-cert-file", "/path/to/cert.pem"},
+			args:             []string{testProgramName, "--flow-http-tls-cert-file", "/path/to/cert.pem"},
 			version:          testVersion,
 			expectedExitCode: -1, // Should not exit, flag is allowed
 		},
 		{
 			name:             "http tls cert file flag missing value",
-			args:             []string{testProgramName, "--neo4j-http-tls-cert-file"},
+			args:             []string{testProgramName, "--flow-http-tls-cert-file"},
 			version:          testVersion,
 			expectedExitCode: 1,
-			expectedStderr:   "--neo4j-http-tls-cert-file requires a value",
+			expectedStderr:   "--flow-http-tls-cert-file requires a value",
 		},
 		{
 			name:             "http tls key file flag with valid value",
-			args:             []string{testProgramName, "--neo4j-http-tls-key-file", "/path/to/key.pem"},
+			args:             []string{testProgramName, "--flow-http-tls-key-file", "/path/to/key.pem"},
 			version:          testVersion,
 			expectedExitCode: -1, // Should not exit, flag is allowed
 		},
 		{
 			name:             "http tls key file flag missing value",
-			args:             []string{testProgramName, "--neo4j-http-tls-key-file"},
+			args:             []string{testProgramName, "--flow-http-tls-key-file"},
 			version:          testVersion,
 			expectedExitCode: 1,
-			expectedStderr:   "--neo4j-http-tls-key-file requires a value",
+			expectedStderr:   "--flow-http-tls-key-file requires a value",
 		},
 		{
 			name:             "http allowed origins flag with valid value",
-			args:             []string{testProgramName, "--neo4j-http-allowed-origins", "https://example.com"},
+			args:             []string{testProgramName, "--flow-http-allowed-origins", "https://example.com"},
 			version:          testVersion,
 			expectedExitCode: -1, // Should not exit, flag is allowed
 		},
 		{
 			name:             "http allowed origins flag with multiple origins",
-			args:             []string{testProgramName, "--neo4j-http-allowed-origins", "https://example.com,https://example2.com"},
+			args:             []string{testProgramName, "--flow-http-allowed-origins", "https://example.com,https://example2.com"},
 			version:          testVersion,
 			expectedExitCode: -1, // Should not exit, flag is allowed
 		},
 		{
 			name:             "http allowed origins flag missing value",
-			args:             []string{testProgramName, "--neo4j-http-allowed-origins"},
+			args:             []string{testProgramName, "--flow-http-allowed-origins"},
 			version:          testVersion,
 			expectedExitCode: 1,
-			expectedStderr:   "--neo4j-http-allowed-origins requires a value",
+			expectedStderr:   "--flow-http-allowed-origins requires a value",
 		},
 		{
 			name:             "double dash separator stops flag processing",
@@ -273,7 +273,7 @@ func TestHandleArgs(t *testing.T) {
 		},
 		{
 			name:             "double dash separator with config flags before it",
-			args:             []string{testProgramName, "--neo4j-uri", "bolt://localhost:7687", "--", "--unknown-flag"},
+			args:             []string{testProgramName, "--flow-uri", "bolt://localhost:7687", "--", "--unknown-flag"},
 			version:          testVersion,
 			expectedExitCode: -1, // Should not exit, config flag before -- is valid
 		},

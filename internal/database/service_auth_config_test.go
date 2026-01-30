@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/neo4j/mcp/internal/auth"
-	"github.com/neo4j/mcp/internal/config"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/auth"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/config"
 	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 )
 
