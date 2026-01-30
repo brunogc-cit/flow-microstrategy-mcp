@@ -69,14 +69,15 @@ func (c *Config) Validate() error {
 	// For STDIO mode, require username and password from environment
 	// For HTTP mode with API token, require username and password (server-side credentials)
 	// For HTTP mode without API token, credentials come from per-request Basic Auth headers
-	if c.TransportMode == TransportModeStdio {
+	switch c.TransportMode {
+	case TransportModeStdio:
 		if c.Username == "" {
 			return fmt.Errorf("Neo4j username is required for STDIO mode")
 		}
 		if c.Password == "" {
 			return fmt.Errorf("Neo4j password is required for STDIO mode")
 		}
-	} else if c.TransportMode == TransportModeHTTP {
+	case TransportModeHTTP:
 		if c.APIToken != "" {
 			// API token mode: server authenticates clients with token, uses configured Neo4j credentials
 			if c.Username == "" {
