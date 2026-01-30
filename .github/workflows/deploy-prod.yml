@@ -88,6 +88,7 @@ jobs:
                 FLOW_URI="${{ secrets.FLOW_URI_PROD }}" \
                 FLOW_USERNAME="${{ secrets.FLOW_USERNAME_PROD }}" \
                 FLOW_PASSWORD="${{ secrets.FLOW_PASSWORD_PROD }}" \
+                FLOW_API_TOKEN="${{ secrets.FLOW_API_TOKEN }}" \
                 FLOW_MCP_TRANSPORT="http" \
                 FLOW_TELEMETRY="true" \
               --registry-server ${{ env.REGISTRY }} \

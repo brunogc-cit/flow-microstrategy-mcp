@@ -80,6 +80,7 @@ jobs:
                 FLOW_URI="${{ secrets.FLOW_URI_PREVIEW }}" \
                 FLOW_USERNAME="${{ secrets.FLOW_USERNAME_PREVIEW }}" \
                 FLOW_PASSWORD="${{ secrets.FLOW_PASSWORD_PREVIEW }}" \
+                FLOW_API_TOKEN="${{ secrets.FLOW_API_TOKEN }}" \
                 FLOW_MCP_TRANSPORT="http" \
               --registry-server ${{ env.REGISTRY }} \
               --registry-username ${{ github.actor }} \

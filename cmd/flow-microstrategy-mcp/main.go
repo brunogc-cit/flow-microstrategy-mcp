@@ -56,10 +56,10 @@ func main() {
 
 	// Initialize Neo4j driver
 	// For STDIO mode: use environment credentials
-	// For HTTP mode: create driver without auth, per-request credentials will be used via impersonation
-	// Credentials come from per-request Basic Auth headers
+	// For HTTP mode with API token: use environment credentials (server-side auth)
+	// For HTTP mode without API token: create driver without auth, per-request credentials will be used
 	var authToken neo4j.AuthToken
-	if cfg.TransportMode == config.TransportModeStdio {
+	if cfg.TransportMode == config.TransportModeStdio || cfg.APIToken != "" {
 		authToken = neo4j.BasicAuth(cfg.Username, cfg.Password, "")
 	}
 

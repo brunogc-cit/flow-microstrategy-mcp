@@ -41,6 +41,7 @@ type Config struct {
 	HTTPTLSEnabled     bool          // If true, enables TLS/HTTPS for HTTP server (default: false)
 	HTTPTLSCertFile    string        // Path to TLS certificate file (required if HTTPTLSEnabled is true)
 	HTTPTLSKeyFile     string        // Path to TLS private key file (required if HTTPTLSEnabled is true)
+	APIToken           string        // Fixed API token for HTTP mode authentication (optional, enables server-side Neo4j credentials)
 	MCPVersion         string        // MCP version string
 }
 
@@ -66,7 +67,8 @@ func (c *Config) Validate() error {
 	}
 
 	// For STDIO mode, require username and password from environment
-	// For HTTP mode, credentials come from per-request Basic Auth headers
+	// For HTTP mode with API token, require username and password (server-side credentials)
+	// For HTTP mode without API token, credentials come from per-request Basic Auth headers
 	if c.TransportMode == TransportModeStdio {
 		if c.Username == "" {
 			return fmt.Errorf("Neo4j username is required for STDIO mode")
@@ -74,8 +76,19 @@ func (c *Config) Validate() error {
 		if c.Password == "" {
 			return fmt.Errorf("Neo4j password is required for STDIO mode")
 		}
-	} else if c.Username != "" || c.Password != "" {
-		return fmt.Errorf("Neo4j username and password should not be set for HTTP transport mode; credentials are provided per-request via Basic Auth headers")
+	} else if c.TransportMode == TransportModeHTTP {
+		if c.APIToken != "" {
+			// API token mode: server authenticates clients with token, uses configured Neo4j credentials
+			if c.Username == "" {
+				return fmt.Errorf("Neo4j username is required when using API token authentication (FLOW_API_TOKEN)")
+			}
+			if c.Password == "" {
+				return fmt.Errorf("Neo4j password is required when using API token authentication (FLOW_API_TOKEN)")
+			}
+		} else if c.Username != "" || c.Password != "" {
+			// Per-request auth mode: credentials should not be configured
+			return fmt.Errorf("Neo4j username and password should not be set for HTTP transport mode without API token; credentials are provided per-request via Basic Auth headers, or set FLOW_API_TOKEN for server-side authentication")
+		}
 	}
 
 	// For HTTP mode with TLS enabled, require certificate and key files
@@ -150,6 +163,7 @@ func LoadConfig(cliOverrides *CLIOverrides) (*Config, error) {
 		HTTPTLSEnabled:     ParseBool(GetEnv("FLOW_MCP_HTTP_TLS_ENABLED"), false),
 		HTTPTLSCertFile:    GetEnv("FLOW_MCP_HTTP_TLS_CERT_FILE"),
 		HTTPTLSKeyFile:     GetEnv("FLOW_MCP_HTTP_TLS_KEY_FILE"),
+		APIToken:           GetEnv("FLOW_API_TOKEN"),
 	}
 
 	// Apply CLI overrides if provided

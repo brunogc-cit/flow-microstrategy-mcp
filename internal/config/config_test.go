@@ -91,7 +91,7 @@ func TestConfig_Validate(t *testing.T) {
 				TransportMode: TransportModeHTTP,
 			},
 			wantErr: true,
-			errMsg:  "Neo4j username and password should not be set for HTTP transport mode; credentials are provided per-request via Basic Auth headers",
+			errMsg:  "Neo4j username and password should not be set for HTTP transport mode without API token; credentials are provided per-request via Basic Auth headers, or set FLOW_API_TOKEN for server-side authentication",
 		},
 	}
 
