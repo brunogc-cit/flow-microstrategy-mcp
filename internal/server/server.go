@@ -320,8 +320,15 @@ func (s *Neo4jMCPServer) StartHTTPServer() error {
 	if s.config.HTTPTLSEnabled {
 		protocol = protocolHTTPS
 	}
-	baseURL := fmt.Sprintf("%s://%s", protocol, addr)
-	slog.Info("Starting HTTP server", "address", addr, "url", baseURL, "tls", s.config.HTTPTLSEnabled)
+	internalURL := fmt.Sprintf("%s://%s", protocol, addr)
+
+	// Use external base URL if configured, otherwise use internal URL
+	sseBaseURL := s.config.HTTPBaseURL
+	if sseBaseURL == "" {
+		sseBaseURL = internalURL
+	}
+
+	slog.Info("Starting HTTP server", "address", addr, "url", internalURL, "sseBaseURL", sseBaseURL, "tls", s.config.HTTPTLSEnabled)
 
 	// Create the StreamableHTTPServer for /mcp endpoint
 	mcpServerHTTP := server.NewStreamableHTTPServer(
@@ -332,7 +339,7 @@ func (s *Neo4jMCPServer) StartHTTPServer() error {
 	// Create SSE server for /sse and /message endpoints
 	sseServer := server.NewSSEServer(
 		s.MCPServer,
-		server.WithBaseURL(baseURL),
+		server.WithBaseURL(sseBaseURL),
 		server.WithSSEEndpoint("/sse"),
 		server.WithMessageEndpoint("/message"),
 	)

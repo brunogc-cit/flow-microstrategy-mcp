@@ -37,6 +37,7 @@ type Config struct {
 	TransportMode      TransportMode // MCP Transport mode (e.g., "stdio", "http")
 	HTTPPort           string        // HTTP server port (default: "443" with TLS, "80" without TLS)
 	HTTPHost           string        // HTTP server host (default: "127.0.0.1")
+	HTTPBaseURL        string        // External base URL for SSE transport (e.g., "https://myapp.azurecontainerapps.io")
 	HTTPAllowedOrigins string        // Comma-separated list of allowed CORS origins (optional, "*" for all)
 	HTTPTLSEnabled     bool          // If true, enables TLS/HTTPS for HTTP server (default: false)
 	HTTPTLSCertFile    string        // Path to TLS certificate file (required if HTTPTLSEnabled is true)
@@ -160,6 +161,7 @@ func LoadConfig(cliOverrides *CLIOverrides) (*Config, error) {
 		TransportMode:      GetTransportModeWithDefault("FLOW_MCP_TRANSPORT", TransportModeStdio),
 		HTTPPort:           GetEnv("FLOW_MCP_HTTP_PORT"), // Default set after TLS determination
 		HTTPHost:           GetEnvWithDefault("FLOW_MCP_HTTP_HOST", "127.0.0.1"),
+		HTTPBaseURL:        GetEnv("FLOW_MCP_HTTP_BASE_URL"), // External URL for SSE (e.g., https://myapp.azurecontainerapps.io)
 		HTTPAllowedOrigins: GetEnv("FLOW_MCP_HTTP_ALLOWED_ORIGINS"),
 		HTTPTLSEnabled:     ParseBool(GetEnv("FLOW_MCP_HTTP_TLS_ENABLED"), false),
 		HTTPTLSCertFile:    GetEnv("FLOW_MCP_HTTP_TLS_CERT_FILE"),

@@ -99,14 +99,18 @@ jobs:
               --server ${{ env.REGISTRY }} \
               --username ${{ github.actor }} \
               --password ${{ secrets.GITHUB_TOKEN }}
-            az containerapp update \
-              --name $APP_NAME \
-              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-              --image $IMAGE_TAG
           fi
 
-          # Get the FQDN
+          # Get the FQDN and set the base URL for SSE transport
           FQDN=$(az containerapp show --name $APP_NAME --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
+          echo "Setting SSE base URL to https://$FQDN"
+
+          # Update the container app with the image and base URL
+          az containerapp update \
+            --name $APP_NAME \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --image $IMAGE_TAG \
+            --set-env-vars "FLOW_MCP_HTTP_BASE_URL=https://$FQDN"
           echo "fqdn=$FQDN" >> $GITHUB_OUTPUT
           echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
 
