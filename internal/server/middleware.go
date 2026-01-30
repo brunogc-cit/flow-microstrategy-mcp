@@ -148,14 +148,21 @@ func corsMiddleware(allowedOrigins []string) func(http.Handler) http.Handler {
 	}
 }
 
-// pathValidationMiddleware validates that requests are only sent to /mcp path
+// validMCPPaths are the allowed paths for MCP transports
+var validMCPPaths = map[string]bool{
+	"/mcp":     true, // Streamable HTTP transport
+	"/sse":     true, // SSE transport - event stream
+	"/message": true, // SSE transport - message endpoint
+}
+
+// pathValidationMiddleware validates that requests are only sent to valid MCP paths
 // Returns 404 for all other paths to avoid hanging connections
 func pathValidationMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Only /mcp path is valid for this MCP server
-			if r.URL.Path != "/mcp" {
-				http.Error(w, "Not Found: This server only handles requests to /mcp", http.StatusNotFound)
+			// Only valid MCP paths are allowed
+			if !validMCPPaths[r.URL.Path] {
+				http.Error(w, "Not Found: This server only handles requests to /mcp, /sse, or /message", http.StatusNotFound)
 				return
 			}
 			next.ServeHTTP(w, r)
