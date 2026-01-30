@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/subtle"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -25,7 +26,8 @@ func (s *Neo4jMCPServer) chainMiddleware(allowedOrigins []string, next http.Hand
 	handler = loggingMiddleware()(handler)
 
 	// Add auth middleware (supports both Bearer and Basic authentication)
-	handler = authMiddleware()(handler)
+	// Pass API token for server-side authentication mode
+	handler = authMiddleware(s.config.APIToken)(handler)
 
 	// Add CORS middleware (if configured)
 	handler = corsMiddleware(allowedOrigins)(handler)
@@ -37,11 +39,10 @@ func (s *Neo4jMCPServer) chainMiddleware(allowedOrigins []string, next http.Hand
 }
 
 // authMiddleware enforces HTTP authentication (Bearer token or Basic Auth) for all requests in HTTP mode.
-// Tries Bearer token first (from Authorization: Bearer header), then falls back to Basic Auth.
-// Credentials are extracted and stored in the request context for tools to create
-// per-request Neo4j driver connections, enabling multi-tenant scenarios.
-// Returns 401 Unauthorized if credentials are missing or malformed.
-func authMiddleware() func(http.Handler) http.Handler {
+// When apiToken is configured, bearer tokens are validated against it and server-side Neo4j credentials are used.
+// When apiToken is empty, credentials are extracted from per-request Basic Auth or Bearer token for Neo4j auth.
+// Returns 401 Unauthorized if credentials are missing, malformed, or invalid.
+func authMiddleware(apiToken string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -57,13 +58,34 @@ func authMiddleware() func(http.Handler) http.Handler {
 					return
 				}
 
-				// Bearer token provided - store in context
+				// If API token is configured, validate against it
+				if apiToken != "" {
+					// Use constant-time comparison to prevent timing attacks
+					if subtle.ConstantTimeCompare([]byte(token), []byte(apiToken)) != 1 {
+						w.Header().Set("WWW-Authenticate", `Bearer realm="Flow Microstrategy MCP"`)
+						http.Error(w, "Unauthorized: Invalid API token", http.StatusUnauthorized)
+						return
+					}
+					// API token validated - mark context to use server-side credentials
+					ctx := auth.WithAPITokenAuth(r.Context())
+					next.ServeHTTP(w, r.WithContext(ctx))
+					return
+				}
+
+				// No API token configured - pass bearer token to Neo4j (SSO/OIDC mode)
 				ctx := auth.WithBearerToken(r.Context(), token)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
-			// Fall back to basic auth
+			// Fall back to basic auth (only if API token is not configured)
+			if apiToken != "" {
+				// API token mode requires bearer token
+				w.Header().Set("WWW-Authenticate", `Bearer realm="Flow Microstrategy MCP"`)
+				http.Error(w, "Unauthorized: Bearer token required", http.StatusUnauthorized)
+				return
+			}
+
 			user, pass, ok := r.BasicAuth()
 			if !ok {
 				// No credentials provided - reject request
@@ -126,14 +148,21 @@ func corsMiddleware(allowedOrigins []string) func(http.Handler) http.Handler {
 	}
 }
 
-// pathValidationMiddleware validates that requests are only sent to /mcp path
+// validMCPPaths are the allowed paths for MCP transports
+var validMCPPaths = map[string]bool{
+	"/mcp":     true, // Streamable HTTP transport
+	"/sse":     true, // SSE transport - event stream
+	"/message": true, // SSE transport - message endpoint
+}
+
+// pathValidationMiddleware validates that requests are only sent to valid MCP paths
 // Returns 404 for all other paths to avoid hanging connections
 func pathValidationMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Only /mcp path is valid for this MCP server
-			if r.URL.Path != "/mcp" {
-				http.Error(w, "Not Found: This server only handles requests to /mcp", http.StatusNotFound)
+			// Only valid MCP paths are allowed
+			if !validMCPPaths[r.URL.Path] {
+				http.Error(w, "Not Found: This server only handles requests to /mcp, /sse, or /message", http.StatusNotFound)
 				return
 			}
 			next.ServeHTTP(w, r)
