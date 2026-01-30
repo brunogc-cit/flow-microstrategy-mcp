@@ -7,16 +7,16 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/neo4j/mcp/internal/analytics"
-	"github.com/neo4j/mcp/internal/cli"
-	"github.com/neo4j/mcp/internal/config"
-	"github.com/neo4j/mcp/internal/database"
-	"github.com/neo4j/mcp/internal/logger"
-	"github.com/neo4j/mcp/internal/server"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/analytics"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/cli"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/config"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/database"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/logger"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/server"
 	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 )
 
-// go build -C cmd/neo4j-mcp -o ../../bin/ -ldflags "-X 'main.Version=9999'"
+// go build -C cmd/flow-microstrategy-mcp -o ../../bin/ -ldflags "-X 'main.Version=9999'"
 var Version = "development"
 
 const MixPanelEndpoint = "https://api.mixpanel.com"
@@ -90,7 +90,7 @@ func main() {
 	if cfg.Telemetry && Version != "development" {
 		anService.Enable()
 		log.Println("Telemetry is enabled to help us improve the product by collecting anonymous usage data such as: tools being used, the operating system, and CPU architecture.")
-		log.Println("To disable telemetry, set the NEO4J_TELEMETRY environment variable to \"false\".")
+		log.Println("To disable telemetry, set the FLOW_TELEMETRY environment variable to \"false\".")
 	} else {
 		log.Println("Telemetry disabled.")
 		anService.Disable()

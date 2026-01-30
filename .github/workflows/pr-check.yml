@@ -1,0 +1,40 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-changie:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for change entry
+        run: |
+          # Skip check for release PRs and dependency updates
+          if [[ "${{ github.head_ref }}" == release/* ]] || [[ "${{ github.head_ref }}" == dependabot/* ]]; then
+            echo "✅ Automated PR - skipping changie check"
+            exit 0
+          fi
+
+          # Get changed files in this PR
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+
+          # Skip if only docs/CI changes
+          if echo "$CHANGED_FILES" | grep -qvE "^(\.github/|README|CONTRIBUTING|docs/|\.md$)"; then
+            # Code changes detected, require changie entry
+            if echo "$CHANGED_FILES" | grep -q "^\.changes/unreleased/"; then
+              echo "✅ Change entry found"
+            else
+              echo "❌ ERROR: No change entry found!"
+              echo ""
+              echo "Run 'changie new' before committing code changes."
+              exit 1
+            fi
+          else
+            echo "✅ Documentation-only changes - no changie entry required"
+          fi

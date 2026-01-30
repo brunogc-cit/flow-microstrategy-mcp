@@ -1,6 +1,6 @@
 # Integration Tests
 
-Integration tests for the Neo4j MCP server using a shared Neo4j container (includes APOC + GDS).
+Integration tests for the Flow Microstrategy MCP server using a shared Neo4j container (includes APOC + GDS).
 
 ## Quick Start
 
@@ -92,4 +92,4 @@ go test -tags=integration ./test/integration/... -v
 - Always use `t.Parallel()` for parallel execution
 - Always use the `UniqueLabel` returned by `SeedNode()` or `GetUniqueLabel()` in your queries for isolation
 - Test data is automatically tagged with unique labels and cleaned up after each test
-- Import the helpers package: `"github.com/neo4j/mcp/test/integration/helpers"`
+- Import the helpers package: `"github.com/brunogc-cit/flow-microstrategy-mcp/test/integration/helpers"`

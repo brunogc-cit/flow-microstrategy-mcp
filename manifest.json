@@ -1,73 +1,73 @@
 {
   "manifest_version": "0.3",
-  "name": "neo4j-mcp",
+  "name": "flow-microstrategy-mcp",
   "version": "1.0.0",
   "description": "MCP server for MicroStrategy to Power BI migration - query metrics, attributes, dependencies and lineage.",
   "author": {
-    "name": "Neo4j",
-    "url": "https://neo4j.com/"
+    "name": "CI&T Flow",
+    "url": "https://flow.ciandt.com/"
   },
-  "homepage": "https://github.com/neo4j/mcp",
-  "documentation": "https://neo4j.com/docs/mcp/",
-  "support": "https://github.com/neo4j/mcp/issues",
+  "homepage": "https://github.com/brunogc-cit/flow-microstrategy-mcp",
+  "documentation": "https://github.com/brunogc-cit/flow-microstrategy-mcp",
+  "support": "https://github.com/brunogc-cit/flow-microstrategy-mcp/issues",
   "user_config": {
-    "NEO4J_URI": {
+    "FLOW_URI": {
       "type": "string",
       "title": "Connection URI",
       "description": "Connection URI (e.g., bolt://localhost:7687)",
       "required": true,
       "sensitive": false
     },
-    "NEO4J_USERNAME": {
+    "FLOW_USERNAME": {
       "type": "string",
       "title": "Neo4j username",
       "description": "Neo4j username (e.g., neo4j)",
       "required": true,
       "sensitive": false
     },
-    "NEO4J_PASSWORD": {
+    "FLOW_PASSWORD": {
       "type": "string",
       "title": "Neo4j password",
       "description": "Neo4j password",
       "required": true,
       "sensitive": true
     },
-    "NEO4J_DATABASE": {
+    "FLOW_DATABASE": {
       "type": "string",
       "title": "Database name",
       "description": "Database name (e.g., neo4j)",
       "required": false,
       "sensitive": false
     },
-    "NEO4J_READ_ONLY": {
+    "FLOW_READ_ONLY": {
       "type": "boolean",
       "title": "Readonly flag",
       "description": "Set to true to disable write tools",
       "required": false,
       "sensitive": false
     },
-    "NEO4J_TELEMETRY": {
+    "FLOW_TELEMETRY": {
       "type": "boolean",
       "title": "Telemetry",
       "description": "Set to false to disable telemetry (default true)",
       "required": false,
       "sensitive": false
     },
-    "NEO4J_LOG_LEVEL": {
+    "FLOW_LOG_LEVEL": {
       "type": "string",
       "title": "Log Level",
       "description": "Log level (e.g., debug, info, notice, warning, error, critical, alert, emergency)",
       "required": false,
       "sensitive": false
     },
-    "NEO4J_LOG_FORMAT": {
+    "FLOW_LOG_FORMAT": {
       "type": "string",
       "title": "Log Format",
       "description": "Log output format: text or json (default text)",
       "required": false,
       "sensitive": false
     },
-    "NEO4J_SCHEMA_SAMPLE_SIZE": {
+    "FLOW_SCHEMA_SAMPLE_SIZE": {
       "type": "string",
       "title": "Schema inference sample size",
       "description": "Number of nodes to sample for schema inference",
@@ -77,19 +77,19 @@
   },
   "server": {
     "type": "binary",
-    "entry_point": "neo4j-mcp",
+    "entry_point": "flow-microstrategy-mcp",
     "mcp_config": {
-      "command": "${__dirname}${/}bin/neo4j-mcp",
+      "command": "${__dirname}${/}bin/flow-microstrategy-mcp",
       "env": {
-        "NEO4J_URI": "${user_config.NEO4J_URI}",
-        "NEO4J_USERNAME": "${user_config.NEO4J_USERNAME}",
-        "NEO4J_PASSWORD": "${user_config.NEO4J_PASSWORD}",
-        "NEO4J_DATABASE": "${user_config.NEO4J_DATABASE}",
-        "NEO4J_READ_ONLY": "${user_config.NEO4J_READ_ONLY}",
-        "NEO4J_TELEMETRY": "${user_config.NEO4J_TELEMETRY}",
-        "NEO4J_LOG_LEVEL": "${user_config.NEO4J_LOG_LEVEL}",
-        "NEO4J_LOG_FORMAT": "${user_config.NEO4J_LOG_FORMAT}",
-        "NEO4J_SCHEMA_SAMPLE_SIZE": "${user_config.NEO4J_SCHEMA_SAMPLE_SIZE}"
+        "FLOW_URI": "${user_config.FLOW_URI}",
+        "FLOW_USERNAME": "${user_config.FLOW_USERNAME}",
+        "FLOW_PASSWORD": "${user_config.FLOW_PASSWORD}",
+        "FLOW_DATABASE": "${user_config.FLOW_DATABASE}",
+        "FLOW_READ_ONLY": "${user_config.FLOW_READ_ONLY}",
+        "FLOW_TELEMETRY": "${user_config.FLOW_TELEMETRY}",
+        "FLOW_LOG_LEVEL": "${user_config.FLOW_LOG_LEVEL}",
+        "FLOW_LOG_FORMAT": "${user_config.FLOW_LOG_FORMAT}",
+        "FLOW_SCHEMA_SAMPLE_SIZE": "${user_config.FLOW_SCHEMA_SAMPLE_SIZE}"
       }
     }
   },
@@ -151,18 +151,21 @@
     "platforms": ["darwin", "linux", "win32"]
   },
   "keywords": [
-    "Neo4j",
+    "Flow",
+    "CI&T",
+    "Flow Microstrategy",
     "MCP",
     "MicroStrategy",
     "Power BI",
     "Migration",
     "Metrics",
     "Attributes",
-    "Lineage"
+    "Lineage",
+    "Neo4j"
   ],
   "license": "GPL",
   "repository": {
     "type": "git",
-    "url": "https://github.com/neo4j/mcp"
+    "url": "https://github.com/brunogc-cit/flow-microstrategy-mcp"
   }
 }

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/neo4j/mcp/internal/tools/gds"
-	"github.com/neo4j/mcp/test/integration/helpers"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools/gds"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/test/integration/helpers"
 )
 
 func TestListGdsProcedures(t *testing.T) {

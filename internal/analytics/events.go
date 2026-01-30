@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/neo4j/mcp/internal/config"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/config"
 )
 
 const eventNamePrefix = "MCP4NEO4J"

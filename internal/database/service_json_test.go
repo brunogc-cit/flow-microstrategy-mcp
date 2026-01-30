@@ -3,7 +3,7 @@ package database_test
 import (
 	"testing"
 
-	"github.com/neo4j/mcp/internal/database"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/database"
 	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 )
 

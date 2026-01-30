@@ -15,10 +15,10 @@ The final `.mcpb` build depends on:
 npm install -g @anthropic-ai/mcpb
 
 # build binaries for your OS/Architecture
-go build -C cmd/neo4j-mcp -o ../../bin/
+go build -C cmd/flow-microstrategy-mcp -o ../../bin/
 
 # Build bundle from the repository root with a custom name
-mcpb pack . neo4j-official-mcp-1.0.0.mcpb
+mcpb pack . flow-microstrategy-mcp-1.0.0.mcpb
 ```
 
 You can now go to your Claude Desktop and install the bundle just created.

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/neo4j/mcp/internal/config"
-	"github.com/neo4j/mcp/internal/database"
-	db "github.com/neo4j/mcp/internal/database/mocks"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/config"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/database"
+	db "github.com/brunogc-cit/flow-microstrategy-mcp/internal/database/mocks"
 	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 	"go.uber.org/mock/gomock"
 )

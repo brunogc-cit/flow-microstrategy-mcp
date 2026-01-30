@@ -8,8 +8,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/neo4j/mcp/test/dbservice"
-	"github.com/neo4j/mcp/test/e2e/helpers"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/test/dbservice"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/test/e2e/helpers"
 )
 
 var dbs = dbservice.NewDBService()

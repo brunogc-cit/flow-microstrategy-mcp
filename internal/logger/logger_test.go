@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/neo4j/mcp/internal/logger"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/logger"
 )
 
 func TestLogLevelChange(t *testing.T) {

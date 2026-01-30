@@ -1,0 +1,111 @@
+name: Deploy to Production
+
+on:
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  AZURE_RESOURCE_GROUP: ASOS_AI
+  AZURE_CONTAINER_ENV: cae-mcp-asos
+  AZURE_LOCATION: uksouth
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version from release tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Deploying version: $VERSION"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container Apps
+        run: |
+          APP_NAME="ca-mcp-asos-prod"
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
+
+          # Check if Container App exists
+          EXISTS=$(az containerapp show --name $APP_NAME --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "name" -o tsv 2>/dev/null || echo "")
+
+          if [ -z "$EXISTS" ]; then
+            echo "Creating production Container App: $APP_NAME"
+            az containerapp create \
+              --name $APP_NAME \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --environment ${{ env.AZURE_CONTAINER_ENV }} \
+              --image $IMAGE_TAG \
+              --target-port 8080 \
+              --ingress external \
+              --env-vars \
+                FLOW_URI="${{ secrets.FLOW_URI_PROD }}" \
+                FLOW_USERNAME="${{ secrets.FLOW_USERNAME_PROD }}" \
+                FLOW_PASSWORD="${{ secrets.FLOW_PASSWORD_PROD }}" \
+                FLOW_MCP_TRANSPORT="http" \
+                FLOW_TELEMETRY="true" \
+              --registry-server ${{ env.REGISTRY }} \
+              --registry-username ${{ github.actor }} \
+              --registry-password ${{ secrets.GITHUB_TOKEN }} \
+              --cpu 1 \
+              --memory 2Gi \
+              --min-replicas 1 \
+              --max-replicas 3
+          else
+            echo "Updating production Container App: $APP_NAME"
+            az containerapp update \
+              --name $APP_NAME \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --image $IMAGE_TAG
+          fi
+
+          # Get the FQDN
+          FQDN=$(az containerapp show --name $APP_NAME --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
+          echo "✅ Production deployed to: https://$FQDN"
+          echo "   Version: ${{ steps.version.outputs.version }}"

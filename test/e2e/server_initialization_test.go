@@ -8,7 +8,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/neo4j/mcp/test/e2e/helpers"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/test/e2e/helpers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,10 +21,10 @@ func TestServerInitializationE2E(t *testing.T) {
 		t.Parallel()
 
 		args := []string{
-			"--neo4j-uri", cfg.URI,
-			"--neo4j-username", cfg.Username,
-			"--neo4j-password", cfg.Password,
-			"--neo4j-database", cfg.Database,
+			"--flow-uri", cfg.URI,
+			"--flow-username", cfg.Username,
+			"--flow-password", cfg.Password,
+			"--flow-database", cfg.Database,
 		}
 
 		mcpClient, err := client.NewStdioMCPClient(server, []string{}, args...)
@@ -38,7 +38,7 @@ func TestServerInitializationE2E(t *testing.T) {
 		require.NoError(t, err, "failed to initialize MCP server")
 
 		// Verify server info
-		assert.Equal(t, "neo4j-mcp", initResponse.ServerInfo.Name)
+		assert.Equal(t, "flow-microstrategy-mcp", initResponse.ServerInfo.Name)
 		assert.NotEmpty(t, initResponse.ServerInfo.Version)
 
 		// Verify capabilities
@@ -52,9 +52,9 @@ func TestServerInitializationE2E(t *testing.T) {
 		t.Parallel()
 
 		args := []string{
-			"--neo4j-uri", cfg.URI,
-			"--neo4j-username", cfg.Username,
-			"--neo4j-password", cfg.Password,
+			"--flow-uri", cfg.URI,
+			"--flow-username", cfg.Username,
+			"--flow-password", cfg.Password,
 		}
 
 		mcpClient, err := client.NewStdioMCPClient(server, []string{}, args...)
@@ -65,7 +65,7 @@ func TestServerInitializationE2E(t *testing.T) {
 		// Test should pass as the default database is neo4j
 		initRequest := helpers.BuildInitializeRequest()
 		initResponse, err := mcpClient.Initialize(ctx, initRequest)
-		assert.Equal(t, "neo4j-mcp", initResponse.ServerInfo.Name)
+		assert.Equal(t, "flow-microstrategy-mcp", initResponse.ServerInfo.Name)
 
 	})
 
@@ -73,11 +73,11 @@ func TestServerInitializationE2E(t *testing.T) {
 		t.Parallel()
 
 		args := []string{
-			"--neo4j-uri", cfg.URI,
-			"--neo4j-username", cfg.Username,
-			"--neo4j-password", cfg.Password,
-			"--neo4j-database", cfg.Database,
-			"--neo4j-read-only", "true",
+			"--flow-uri", cfg.URI,
+			"--flow-username", cfg.Username,
+			"--flow-password", cfg.Password,
+			"--flow-database", cfg.Database,
+			"--flow-read-only", "true",
 		}
 
 		mcpClient, err := client.NewStdioMCPClient(server, []string{}, args...)
@@ -90,7 +90,7 @@ func TestServerInitializationE2E(t *testing.T) {
 		initResponse, err := mcpClient.Initialize(ctx, initRequest)
 		require.NoError(t, err, "failed to initialize MCP server in read-only mode")
 
-		assert.Equal(t, "neo4j-mcp", initResponse.ServerInfo.Name)
+		assert.Equal(t, "flow-microstrategy-mcp", initResponse.ServerInfo.Name)
 
 		// List tools to verify read-only mode behavior
 		listToolsResponse, err := mcpClient.ListTools(ctx, mcp.ListToolsRequest{})
@@ -108,11 +108,11 @@ func TestServerInitializationE2E(t *testing.T) {
 		t.Parallel()
 
 		args := []string{
-			"--neo4j-uri", cfg.URI,
-			"--neo4j-username", cfg.Username,
-			"--neo4j-password", cfg.Password,
-			"--neo4j-database", cfg.Database,
-			"--neo4j-read-only", "false",
+			"--flow-uri", cfg.URI,
+			"--flow-username", cfg.Username,
+			"--flow-password", cfg.Password,
+			"--flow-database", cfg.Database,
+			"--flow-read-only", "false",
 		}
 
 		mcpClient, err := client.NewStdioMCPClient(server, []string{}, args...)
@@ -124,7 +124,7 @@ func TestServerInitializationE2E(t *testing.T) {
 		initResponse, err := mcpClient.Initialize(ctx, initRequest)
 		require.NoError(t, err, "failed to initialize MCP server in read-only mode")
 
-		assert.Equal(t, "neo4j-mcp", initResponse.ServerInfo.Name)
+		assert.Equal(t, "flow-microstrategy-mcp", initResponse.ServerInfo.Name)
 
 		listToolsResponse, err := mcpClient.ListTools(ctx, mcp.ListToolsRequest{})
 		require.NoError(t, err, "failed to list tools with read-only mode as false")
@@ -134,11 +134,11 @@ func TestServerInitializationE2E(t *testing.T) {
 		t.Parallel()
 
 		args := []string{
-			"--neo4j-uri", cfg.URI,
-			"--neo4j-username", cfg.Username,
-			"--neo4j-password", cfg.Password,
-			"--neo4j-database", cfg.Database,
-			"--neo4j-telemetry", "false",
+			"--flow-uri", cfg.URI,
+			"--flow-username", cfg.Username,
+			"--flow-password", cfg.Password,
+			"--flow-database", cfg.Database,
+			"--flow-telemetry", "false",
 		}
 
 		mcpClient, err := client.NewStdioMCPClient(server, []string{}, args...)
@@ -151,7 +151,7 @@ func TestServerInitializationE2E(t *testing.T) {
 		initResponse, err := mcpClient.Initialize(ctx, initRequest)
 		require.NoError(t, err, "failed to initialize MCP server with telemetry disabled")
 
-		assert.Equal(t, "neo4j-mcp", initResponse.ServerInfo.Name)
+		assert.Equal(t, "flow-microstrategy-mcp", initResponse.ServerInfo.Name)
 
 		t.Log("Server initialized successfully with telemetry disabled")
 	})
@@ -160,11 +160,11 @@ func TestServerInitializationE2E(t *testing.T) {
 		t.Parallel()
 
 		args := []string{
-			"--neo4j-uri", cfg.URI,
-			"--neo4j-username", cfg.Username,
-			"--neo4j-password", cfg.Password,
-			"--neo4j-database", cfg.Database,
-			"--neo4j-schema-sample-size", "50",
+			"--flow-uri", cfg.URI,
+			"--flow-username", cfg.Username,
+			"--flow-password", cfg.Password,
+			"--flow-database", cfg.Database,
+			"--flow-schema-sample-size", "50",
 		}
 
 		mcpClient, err := client.NewStdioMCPClient(server, []string{}, args...)
@@ -177,7 +177,7 @@ func TestServerInitializationE2E(t *testing.T) {
 		initResponse, err := mcpClient.Initialize(ctx, initRequest)
 		require.NoError(t, err, "failed to initialize MCP server with custom schema sample size")
 
-		assert.Equal(t, "neo4j-mcp", initResponse.ServerInfo.Name)
+		assert.Equal(t, "flow-microstrategy-mcp", initResponse.ServerInfo.Name)
 
 		t.Log("Server initialized successfully with custom schema sample size")
 	})
@@ -186,11 +186,11 @@ func TestServerInitializationE2E(t *testing.T) {
 		t.Parallel()
 
 		args := []string{
-			"--neo4j-uri", cfg.URI,
-			"--neo4j-username", cfg.Username,
-			"--neo4j-password", cfg.Password,
-			"--neo4j-database", cfg.Database,
-			"--neo4j-schema-sample-size", "not-a-number",
+			"--flow-uri", cfg.URI,
+			"--flow-username", cfg.Username,
+			"--flow-password", cfg.Password,
+			"--flow-database", cfg.Database,
+			"--flow-schema-sample-size", "not-a-number",
 		}
 
 		mcpClient, err := client.NewStdioMCPClient(server, []string{}, args...)
@@ -203,7 +203,7 @@ func TestServerInitializationE2E(t *testing.T) {
 		initResponse, err := mcpClient.Initialize(ctx, initRequest)
 		require.NoError(t, err, "failed to initialize MCP server with invalid schema sample size")
 
-		assert.Equal(t, "neo4j-mcp", initResponse.ServerInfo.Name)
+		assert.Equal(t, "flow-microstrategy-mcp", initResponse.ServerInfo.Name)
 
 		t.Log("Server initialized successfully with invalid schema sample size (using default value)")
 	})

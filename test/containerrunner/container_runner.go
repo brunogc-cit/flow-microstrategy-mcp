@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/neo4j/mcp/internal/config"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/config"
 	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -60,9 +60,9 @@ func startOnce(ctx context.Context) {
 
 	cfg = &config.Config{
 		URI:           boltURI,
-		Username:      config.GetEnvWithDefault("NEO4J_USERNAME", "neo4j"),
-		Password:      config.GetEnvWithDefault("NEO4J_PASSWORD", "password"),
-		TransportMode: config.GetTransportModeWithDefault("NEO4J_MCP_TRANSPORT", config.TransportModeStdio),
+		Username:      config.GetEnvWithDefault("FLOW_USERNAME", "neo4j"),
+		Password:      config.GetEnvWithDefault("FLOW_PASSWORD", "password"),
+		TransportMode: config.GetTransportModeWithDefault("FLOW_MCP_TRANSPORT", config.TransportModeStdio),
 	}
 
 	drv, err := neo4j.NewDriver(cfg.URI, neo4j.BasicAuth(cfg.Username, cfg.Password, ""))
@@ -95,7 +95,7 @@ func createNeo4jContainer(ctx context.Context) (testcontainers.Container, string
 		Image:        config.GetEnvWithDefault("NEO4J_IMAGE", "neo4j:5.24.2-community"),
 		ExposedPorts: []string{"7687/tcp"},
 		Env: map[string]string{
-			"NEO4J_AUTH":        fmt.Sprintf("%s/%s", config.GetEnvWithDefault("NEO4J_USERNAME", "neo4j"), config.GetEnvWithDefault("NEO4J_PASSWORD", "password")),
+			"NEO4J_AUTH":        fmt.Sprintf("%s/%s", config.GetEnvWithDefault("FLOW_USERNAME", "neo4j"), config.GetEnvWithDefault("FLOW_PASSWORD", "password")),
 			"NEO4JLABS_PLUGINS": config.GetEnvWithDefault("NEO4JLABS_PLUGINS", `["apoc","graph-data-science"]`),
 		},
 		WaitingFor: wait.ForListeningPort("7687/tcp").WithStartupTimeout(119 * time.Second),

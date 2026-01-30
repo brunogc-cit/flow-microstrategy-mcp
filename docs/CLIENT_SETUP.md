@@ -1,6 +1,6 @@
 # MCP Client Setup Guide
 
-This guide covers how to configure various MCP clients (VSCode, Claude Desktop, etc.) to use the Neo4j MCP server.
+This guide covers how to configure various MCP clients (VSCode, Claude Desktop, etc.) to use the Flow Microstrategy MCP server.
 
 The server supports two transport modes:
 
@@ -16,20 +16,20 @@ See [README.md](../README.md#transport-modes) for more details on transport mode
 **Required:**
 
 ```bash
-export NEO4J_URI="bolt://localhost:7687"
-export NEO4J_USERNAME="neo4j"
-export NEO4J_PASSWORD="password"
+export FLOW_URI="bolt://localhost:7687"
+export FLOW_USERNAME="neo4j"
+export FLOW_PASSWORD="password"
 ```
 
 **Optional:**
 
 ```bash
-export NEO4J_DATABASE="neo4j"               # Default: neo4j
-export NEO4J_READ_ONLY="false"              # Default: false
-export NEO4J_TELEMETRY="true"               # Default: true
-export NEO4J_LOG_LEVEL="info"               # Default: info
-export NEO4J_LOG_FORMAT="text"              # Default: text
-export NEO4J_SCHEMA_SAMPLE_SIZE="100"       # Default: 100
+export FLOW_DATABASE="neo4j"               # Default: neo4j
+export FLOW_READ_ONLY="false"              # Default: false
+export FLOW_TELEMETRY="true"               # Default: true
+export FLOW_LOG_LEVEL="info"               # Default: info
+export FLOW_LOG_FORMAT="text"              # Default: text
+export FLOW_SCHEMA_SAMPLE_SIZE="100"       # Default: 100
 ```
 
 ### HTTP Mode
@@ -37,11 +37,11 @@ export NEO4J_SCHEMA_SAMPLE_SIZE="100"       # Default: 100
 **Required:**
 
 ```bash
-export NEO4J_URI="bolt://localhost:7687"
-export NEO4J_MCP_TRANSPORT="http"
+export FLOW_URI="bolt://localhost:7687"
+export FLOW_MCP_TRANSPORT="http"
 ```
 
-**Important:** Do NOT set `NEO4J_USERNAME` or `NEO4J_PASSWORD` for HTTP mode. Credentials come from per-request headers (Bearer token or Basic Auth).
+**Important:** Do NOT set `FLOW_USERNAME` or `FLOW_PASSWORD` for HTTP mode. Credentials come from per-request headers (Bearer token or Basic Auth).
 
 **Authentication Methods:**
 
@@ -69,22 +69,22 @@ curl -X POST http://localhost:8080/mcp \
 
 ```bash
 # HTTP server configuration
-export NEO4J_MCP_HTTP_HOST="127.0.0.1"      # Default: 127.0.0.1
-export NEO4J_MCP_HTTP_PORT="80"             # Default: 80
-export NEO4J_MCP_HTTP_ALLOWED_ORIGINS="*"   # Default: empty (no CORS)
+export FLOW_MCP_HTTP_HOST="127.0.0.1"      # Default: 127.0.0.1
+export FLOW_MCP_HTTP_PORT="80"             # Default: 80
+export FLOW_MCP_HTTP_ALLOWED_ORIGINS="*"   # Default: empty (no CORS)
 
 # Neo4j configuration (same as STDIO mode)
-export NEO4J_DATABASE="neo4j"               # Default: neo4j
-export NEO4J_READ_ONLY="false"              # Default: false
-export NEO4J_TELEMETRY="true"               # Default: true
-export NEO4J_LOG_LEVEL="info"               # Default: info
-export NEO4J_LOG_FORMAT="text"              # Default: text
-export NEO4J_SCHEMA_SAMPLE_SIZE="100"       # Default: 100
+export FLOW_DATABASE="neo4j"               # Default: neo4j
+export FLOW_READ_ONLY="false"              # Default: false
+export FLOW_TELEMETRY="true"               # Default: true
+export FLOW_LOG_LEVEL="info"               # Default: info
+export FLOW_LOG_FORMAT="text"              # Default: text
+export FLOW_SCHEMA_SAMPLE_SIZE="100"       # Default: 100
 ```
 
 ### CORS Configuration
 
-The `NEO4J_MCP_HTTP_ALLOWED_ORIGINS` variable accepts:
+The `FLOW_MCP_HTTP_ALLOWED_ORIGINS` variable accepts:
 
 - Empty string (default): CORS disabled
 - `"*"`: Allow all origins
@@ -93,7 +93,7 @@ The `NEO4J_MCP_HTTP_ALLOWED_ORIGINS` variable accepts:
 Example:
 
 ```bash
-export NEO4J_MCP_HTTP_ALLOWED_ORIGINS="http://localhost:3000,http://localhost:5173"
+export FLOW_MCP_HTTP_ALLOWED_ORIGINS="http://localhost:3000,http://localhost:5173"
 ```
 
 ## VSCode Configuration
@@ -107,24 +107,24 @@ Create or edit `mcp.json` (docs: https://code.visualstudio.com/docs/copilot/cust
   "servers": {
     "neo4j": {
       "type": "stdio",
-      "command": "neo4j-mcp",
+      "command": "flow-microstrategy-mcp",
       "env": {
-        "NEO4J_URI": "bolt://localhost:7687",
-        "NEO4J_USERNAME": "neo4j",
-        "NEO4J_PASSWORD": "password",
-        "NEO4J_DATABASE": "neo4j",
-        "NEO4J_READ_ONLY": "true",
-        "NEO4J_TELEMETRY": "false",
-        "NEO4J_LOG_LEVEL": "info",
-        "NEO4J_LOG_FORMAT": "text",
-        "NEO4J_SCHEMA_SAMPLE_SIZE": "100"
+        "FLOW_URI": "bolt://localhost:7687",
+        "FLOW_USERNAME": "neo4j",
+        "FLOW_PASSWORD": "password",
+        "FLOW_DATABASE": "neo4j",
+        "FLOW_READ_ONLY": "true",
+        "FLOW_TELEMETRY": "false",
+        "FLOW_LOG_LEVEL": "info",
+        "FLOW_LOG_FORMAT": "text",
+        "FLOW_SCHEMA_SAMPLE_SIZE": "100"
       }
     }
   }
 }
 ```
 
-**Note:** The first three environment variables (NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD) are **required**. The server will fail to start if any of these are missing.
+**Note:** The first three environment variables (FLOW_URI, FLOW_USERNAME, FLOW_PASSWORD) are **required**. The server will fail to start if any of these are missing.
 
 Restart VSCode; open Copilot Chat and ask: "List Neo4j MCP tools" to confirm.
 
@@ -133,9 +133,9 @@ Restart VSCode; open Copilot Chat and ask: "List Neo4j MCP tools" to confirm.
 First, start your Neo4j MCP server in HTTP mode:
 
 ```bash
-export NEO4J_URI="bolt://localhost:7687"
-export NEO4J_MCP_TRANSPORT="http"
-neo4j-mcp
+export FLOW_URI="bolt://localhost:7687"
+export FLOW_MCP_TRANSPORT="http"
+flow-microstrategy-mcp
 ```
 
 The server will start on `http://127.0.0.1:80` by default.
@@ -181,25 +181,25 @@ Open your Claude for Desktop App configuration at:
 - (MacOS/Linux) `~/Library/Application Support/Claude/claude_desktop_config.json`
 - (Windows) `path_to_your\claude_desktop_config.json`
 
-Create the file if it doesn't exist, then add the `neo4j-mcp` server:
+Create the file if it doesn't exist, then add the `flow-microstrategy-mcp` server:
 
 ```json
 {
   "mcpServers": {
-    "neo4j-mcp": {
+    "flow-microstrategy-mcp": {
       "type": "stdio",
-      "command": "neo4j-mcp",
+      "command": "flow-microstrategy-mcp",
       "args": [],
       "env": {
-        "NEO4J_URI": "bolt://localhost:7687",
-        "NEO4J_USERNAME": "neo4j",
-        "NEO4J_PASSWORD": "password",
-        "NEO4J_DATABASE": "neo4j",
-        "NEO4J_READ_ONLY": "true",
-        "NEO4J_TELEMETRY": "false",
-        "NEO4J_LOG_LEVEL": "info",
-        "NEO4J_LOG_FORMAT": "text",
-        "NEO4J_SCHEMA_SAMPLE_SIZE": "100"
+        "FLOW_URI": "bolt://localhost:7687",
+        "FLOW_USERNAME": "neo4j",
+        "FLOW_PASSWORD": "password",
+        "FLOW_DATABASE": "neo4j",
+        "FLOW_READ_ONLY": "true",
+        "FLOW_TELEMETRY": "false",
+        "FLOW_LOG_LEVEL": "info",
+        "FLOW_LOG_FORMAT": "text",
+        "FLOW_SCHEMA_SAMPLE_SIZE": "100"
       }
     }
   }
@@ -208,7 +208,7 @@ Create the file if it doesn't exist, then add the `neo4j-mcp` server:
 
 **Important Notes:**
 
-- The first three environment variables (NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD) are **required**. The server will fail to start if any are missing.
+- The first three environment variables (FLOW_URI, FLOW_USERNAME, FLOW_PASSWORD) are **required**. The server will fail to start if any are missing.
 - Neo4j Desktop default URI: `bolt://localhost:7687`
 - Aura: use the connection string from the Aura console
 
@@ -276,7 +276,7 @@ Each server entry uses different Neo4j credentials, allowing you to switch betwe
 
 ### STDIO Mode
 
-Authentication is handled through environment variables (`NEO4J_USERNAME` and `NEO4J_PASSWORD`) that are configured when starting the server.
+Authentication is handled through environment variables (`FLOW_USERNAME` and `FLOW_PASSWORD`) that are configured when starting the server.
 
 ### HTTP Mode
 
@@ -298,4 +298,4 @@ Configuration instructions for other MCP clients will be added here as they beco
 
 - Check the main [README](../README.md) for general information
 - See [CONTRIBUTING](../CONTRIBUTING.md) for development and testing
-- Open an issue at https://github.com/neo4j/mcp/issues
+- Open an issue at https://github.com/brunogc-cit/flow-microstrategy-mcp/issues

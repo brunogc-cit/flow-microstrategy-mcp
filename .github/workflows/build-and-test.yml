@@ -67,9 +67,9 @@ jobs:
         run: go test -v -tags=integration ./test/integration/...
         env:
           USE_CONTAINER: "false"
-          NEO4J_URI: ${{ secrets.AURA_URL }}
-          NEO4J_USERNAME: ${{ secrets.AURA_USERNAME }}
-          NEO4J_PASSWORD: ${{ secrets.AURA_PASSWORD }}
+          FLOW_URI: ${{ secrets.FLOW_URL }}
+          FLOW_USERNAME: ${{ secrets.FLOW_USERNAME }}
+          FLOW_PASSWORD: ${{ secrets.FLOW_PASSWORD }}
 
   e2e-tests:
     name: E2E Tests
@@ -97,6 +97,6 @@ jobs:
         run: go test -v -tags=e2e ./test/e2e/...
         env:
           USE_CONTAINER: "false"
-          NEO4J_URI: ${{ secrets.AURA_URL }}
-          NEO4J_USERNAME: ${{ secrets.AURA_USERNAME }}
-          NEO4J_PASSWORD: ${{ secrets.AURA_PASSWORD }}
+          FLOW_URI: ${{ secrets.FLOW_URL }}
+          FLOW_USERNAME: ${{ secrets.FLOW_USERNAME }}
+          FLOW_PASSWORD: ${{ secrets.FLOW_PASSWORD }}

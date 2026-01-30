@@ -8,7 +8,7 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/neo4j/mcp/internal/logger"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/logger"
 )
 
 type TransportMode string
@@ -81,10 +81,10 @@ func (c *Config) Validate() error {
 	// For HTTP mode with TLS enabled, require certificate and key files
 	if c.TransportMode == TransportModeHTTP && c.HTTPTLSEnabled {
 		if c.HTTPTLSCertFile == "" {
-			return fmt.Errorf("TLS certificate file is required when TLS is enabled (set NEO4J_MCP_HTTP_TLS_CERT_FILE)")
+			return fmt.Errorf("TLS certificate file is required when TLS is enabled (set FLOW_MCP_HTTP_TLS_CERT_FILE)")
 		}
 		if c.HTTPTLSKeyFile == "" {
-			return fmt.Errorf("TLS key file is required when TLS is enabled (set NEO4J_MCP_HTTP_TLS_KEY_FILE)")
+			return fmt.Errorf("TLS key file is required when TLS is enabled (set FLOW_MCP_HTTP_TLS_KEY_FILE)")
 		}
 
 		// Validate that certificate and key files exist and are valid
@@ -118,38 +118,38 @@ type CLIOverrides struct {
 // CLI flag values take precedence over environment variables.
 // Returns an error if required configuration is missing or invalid.
 func LoadConfig(cliOverrides *CLIOverrides) (*Config, error) {
-	logLevel := GetEnvWithDefault("NEO4J_LOG_LEVEL", "info")
-	logFormat := GetEnvWithDefault("NEO4J_LOG_FORMAT", "text")
+	logLevel := GetEnvWithDefault("FLOW_LOG_LEVEL", "info")
+	logFormat := GetEnvWithDefault("FLOW_LOG_FORMAT", "text")
 
 	// Validate log level and use default if invalid
 	if !slices.Contains(logger.ValidLogLevels, logLevel) {
-		fmt.Fprintf(os.Stderr, "Warning: invalid NEO4J_LOG_LEVEL '%s', using default 'info'. Valid values: %v\n", logLevel, logger.ValidLogLevels)
+		fmt.Fprintf(os.Stderr, "Warning: invalid FLOW_LOG_LEVEL '%s', using default 'info'. Valid values: %v\n", logLevel, logger.ValidLogLevels)
 		logLevel = "info"
 	}
 
 	// Validate log format and use default if invalid
 	if !slices.Contains(logger.ValidLogFormats, logFormat) {
-		fmt.Fprintf(os.Stderr, "Warning: invalid NEO4J_LOG_FORMAT '%s', using default 'text'. Valid values: %v\n", logFormat, logger.ValidLogFormats)
+		fmt.Fprintf(os.Stderr, "Warning: invalid FLOW_LOG_FORMAT '%s', using default 'text'. Valid values: %v\n", logFormat, logger.ValidLogFormats)
 		logFormat = "text"
 	}
 
 	cfg := &Config{
-		URI:                GetEnv("NEO4J_URI"),
-		Username:           GetEnv("NEO4J_USERNAME"),
-		Password:           GetEnv("NEO4J_PASSWORD"),
-		Database:           GetEnvWithDefault("NEO4J_DATABASE", "neo4j"),
-		ReadOnly:           ParseBool(GetEnv("NEO4J_READ_ONLY"), false),
-		Telemetry:          ParseBool(GetEnv("NEO4J_TELEMETRY"), true),
+		URI:                GetEnv("FLOW_URI"),
+		Username:           GetEnv("FLOW_USERNAME"),
+		Password:           GetEnv("FLOW_PASSWORD"),
+		Database:           GetEnvWithDefault("FLOW_DATABASE", "neo4j"),
+		ReadOnly:           ParseBool(GetEnv("FLOW_READ_ONLY"), false),
+		Telemetry:          ParseBool(GetEnv("FLOW_TELEMETRY"), true),
 		LogLevel:           logLevel,
 		LogFormat:          logFormat,
-		SchemaSampleSize:   ParseInt32(GetEnv("NEO4J_SCHEMA_SAMPLE_SIZE"), DefaultSchemaSampleSize),
-		TransportMode:      GetTransportModeWithDefault("NEO4J_MCP_TRANSPORT", TransportModeStdio),
-		HTTPPort:           GetEnv("NEO4J_MCP_HTTP_PORT"), // Default set after TLS determination
-		HTTPHost:           GetEnvWithDefault("NEO4J_MCP_HTTP_HOST", "127.0.0.1"),
-		HTTPAllowedOrigins: GetEnv("NEO4J_MCP_HTTP_ALLOWED_ORIGINS"),
-		HTTPTLSEnabled:     ParseBool(GetEnv("NEO4J_MCP_HTTP_TLS_ENABLED"), false),
-		HTTPTLSCertFile:    GetEnv("NEO4J_MCP_HTTP_TLS_CERT_FILE"),
-		HTTPTLSKeyFile:     GetEnv("NEO4J_MCP_HTTP_TLS_KEY_FILE"),
+		SchemaSampleSize:   ParseInt32(GetEnv("FLOW_SCHEMA_SAMPLE_SIZE"), DefaultSchemaSampleSize),
+		TransportMode:      GetTransportModeWithDefault("FLOW_MCP_TRANSPORT", TransportModeStdio),
+		HTTPPort:           GetEnv("FLOW_MCP_HTTP_PORT"), // Default set after TLS determination
+		HTTPHost:           GetEnvWithDefault("FLOW_MCP_HTTP_HOST", "127.0.0.1"),
+		HTTPAllowedOrigins: GetEnv("FLOW_MCP_HTTP_ALLOWED_ORIGINS"),
+		HTTPTLSEnabled:     ParseBool(GetEnv("FLOW_MCP_HTTP_TLS_ENABLED"), false),
+		HTTPTLSCertFile:    GetEnv("FLOW_MCP_HTTP_TLS_CERT_FILE"),
+		HTTPTLSKeyFile:     GetEnv("FLOW_MCP_HTTP_TLS_KEY_FILE"),
 	}
 
 	// Apply CLI overrides if provided

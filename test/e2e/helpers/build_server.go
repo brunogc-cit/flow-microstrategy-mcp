@@ -30,7 +30,7 @@ func BuildServer() (string, func(), error) {
 	}
 
 	// Define binary path
-	binaryName := "neo4j-mcp"
+	binaryName := "flow-microstrategy-mcp"
 	if runtime.GOOS == "windows" {
 		binaryName += ".exe"
 	}
@@ -41,7 +41,7 @@ func BuildServer() (string, func(), error) {
 
 	// Build the server binary
 	cmd := exec.Command("go", "build", "-o", binaryPath, ".")
-	cmd.Dir = filepath.Join(projectRoot, "cmd", "neo4j-mcp")
+	cmd.Dir = filepath.Join(projectRoot, "cmd", "flow-microstrategy-mcp")
 	cmd.Env = os.Environ() // Use current environment
 
 	// Capture build output for debugging

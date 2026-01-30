@@ -1,11 +1,11 @@
 package analytics
 
-//go:generate mockgen -destination=mocks/mock_analytics.go -package=analytics_mocks -typed github.com/neo4j/mcp/internal/analytics Service,HTTPClient
+//go:generate mockgen -destination=mocks/mock_analytics.go -package=analytics_mocks -typed github.com/brunogc-cit/flow-microstrategy-mcp/internal/analytics Service,HTTPClient
 import (
 	"io"
 	"net/http"
 
-	"github.com/neo4j/mcp/internal/config"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/config"
 )
 
 // Service

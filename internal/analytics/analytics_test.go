@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/neo4j/mcp/internal/analytics"
-	amocks "github.com/neo4j/mcp/internal/analytics/mocks"
-	"github.com/neo4j/mcp/internal/config"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/analytics"
+	amocks "github.com/brunogc-cit/flow-microstrategy-mcp/internal/analytics/mocks"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/config"
 	"go.uber.org/mock/gomock"
 )
 

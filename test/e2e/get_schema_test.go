@@ -9,7 +9,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/neo4j/mcp/test/e2e/helpers"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/test/e2e/helpers"
 )
 
 func TestGetSchemaE2E(t *testing.T) {
@@ -19,10 +19,10 @@ func TestGetSchemaE2E(t *testing.T) {
 
 	cfg := dbs.GetDriverConf()
 	args := []string{
-		"--neo4j-uri", cfg.URI,
-		"--neo4j-username", cfg.Username,
-		"--neo4j-password", cfg.Password,
-		"--neo4j-database", cfg.Database,
+		"--flow-uri", cfg.URI,
+		"--flow-username", cfg.Username,
+		"--flow-password", cfg.Password,
+		"--flow-database", cfg.Database,
 	}
 
 	mcpClient, err := client.NewStdioMCPClient(server, []string{}, args...)

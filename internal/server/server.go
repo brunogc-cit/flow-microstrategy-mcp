@@ -17,9 +17,9 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"github.com/neo4j/mcp/internal/analytics"
-	"github.com/neo4j/mcp/internal/config"
-	"github.com/neo4j/mcp/internal/database"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/analytics"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/config"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/database"
 	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 )
 
@@ -65,11 +65,11 @@ func NewNeo4jMCPServer(version string, cfg *config.Config, dbService database.Se
 	hooks := neo4jServer.configureHooks()
 
 	mcpServer := server.NewMCPServer(
-		"neo4j-mcp",
+		"flow-microstrategy-mcp",
 		version,
 		server.WithToolCapabilities(true),
 		server.WithHooks(hooks),
-		server.WithInstructions("This is the Neo4j official MCP server and can provide tool calling to interact with your Neo4j database,"+
+		server.WithInstructions("This is the Flow Microstrategy MCP server (powered by CI&T Flow) and can provide tool calling to interact with your Neo4j database,"+
 			"by inferring the schema with tools like get-schema and executing arbitrary Cypher queries with read-cypher."),
 	)
 
