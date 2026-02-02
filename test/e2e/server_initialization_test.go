@@ -101,7 +101,10 @@ func TestServerInitializationE2E(t *testing.T) {
 				t.Fatal("write-cypher tool found using readonly mode")
 			}
 		}
-		assert.Len(t, listToolsResponse.Tools, 3, "read-only mode true returns the wrong number of tools")
+		// Expect 2 tools in read-only mode: get-schema, read-cypher
+		// (list-gds-procedures is filtered out if GDS is not installed)
+		assert.GreaterOrEqual(t, len(listToolsResponse.Tools), 2, "read-only mode should have at least 2 tools (get-schema, read-cypher)")
+		assert.LessOrEqual(t, len(listToolsResponse.Tools), 3, "read-only mode should have at most 3 tools (get-schema, read-cypher, list-gds-procedures)")
 	})
 
 	t.Run("initialization with read-only mode disabled", func(t *testing.T) {
@@ -128,7 +131,10 @@ func TestServerInitializationE2E(t *testing.T) {
 
 		listToolsResponse, err := mcpClient.ListTools(ctx, mcp.ListToolsRequest{})
 		require.NoError(t, err, "failed to list tools with read-only mode as false")
-		assert.Len(t, listToolsResponse.Tools, 4, "read-only mode false returns the wrong number of tools")
+		// Expect 3 tools when read-only is false: get-schema, read-cypher, write-cypher
+		// (list-gds-procedures is filtered out if GDS is not installed)
+		assert.GreaterOrEqual(t, len(listToolsResponse.Tools), 3, "read-only mode false should have at least 3 tools")
+		assert.LessOrEqual(t, len(listToolsResponse.Tools), 4, "read-only mode false should have at most 4 tools")
 	})
 	t.Run("initialization with telemetry disabled", func(t *testing.T) {
 		t.Parallel()

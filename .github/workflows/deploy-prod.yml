@@ -88,7 +88,10 @@ jobs:
                 FLOW_URI="${{ secrets.FLOW_URI_PROD }}" \
                 FLOW_USERNAME="${{ secrets.FLOW_USERNAME_PROD }}" \
                 FLOW_PASSWORD="${{ secrets.FLOW_PASSWORD_PROD }}" \
+                FLOW_API_TOKEN="${{ secrets.FLOW_API_TOKEN }}" \
                 FLOW_MCP_TRANSPORT="http" \
+                FLOW_MCP_HTTP_PORT="8080" \
+                FLOW_MCP_HTTP_HOST="0.0.0.0" \
                 FLOW_TELEMETRY="true" \
               --registry-server ${{ env.REGISTRY }} \
               --registry-username ${{ github.actor }} \
@@ -99,13 +102,23 @@ jobs:
               --max-replicas 3
           else
             echo "Updating production Container App: $APP_NAME"
-            az containerapp update \
+            az containerapp registry set \
               --name $APP_NAME \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-              --image $IMAGE_TAG
+              --server ${{ env.REGISTRY }} \
+              --username ${{ github.actor }} \
+              --password ${{ secrets.GITHUB_TOKEN }}
           fi
 
-          # Get the FQDN
+          # Get the FQDN and set the base URL for SSE transport
           FQDN=$(az containerapp show --name $APP_NAME --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
+          echo "Setting SSE base URL to https://$FQDN"
+
+          # Update the container app with the image and base URL
+          az containerapp update \
+            --name $APP_NAME \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --image $IMAGE_TAG \
+            --set-env-vars "FLOW_MCP_HTTP_BASE_URL=https://$FQDN"
           echo "✅ Production deployed to: https://$FQDN"
           echo "   Version: ${{ steps.version.outputs.version }}"

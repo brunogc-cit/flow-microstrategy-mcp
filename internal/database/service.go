@@ -56,20 +56,21 @@ func (s *Neo4jService) buildQueryOptions(ctx context.Context, baseOptions ...neo
 	queryOptions = append(queryOptions, baseOptions...)
 
 	// For HTTP mode, extract credentials from context and use impersonation
-	if s.transportMode == config.TransportModeHTTP {
+	// Skip if API token auth is used (driver already has credentials)
+	if s.transportMode == config.TransportModeHTTP && !auth.IsAPITokenAuth(ctx) {
 		authToken := s.getHTTPAuthToken(ctx)
 		if authToken != nil {
 			queryOptions = append(queryOptions, neo4j.ExecuteQueryWithAuthToken(*authToken))
 		}
 	}
-	// For STDIO mode, driver's built-in credentials are used automatically (no auth token needed)
+	// For STDIO mode or API token auth, driver's built-in credentials are used automatically
 	return queryOptions
 }
 
 // VerifyConnectivity checks the driver can establish a valid connection with a Neo4j instance;
 func (s *Neo4jService) VerifyConnectivity(ctx context.Context) error {
-	// For HTTP mode, extract credentials from context
-	if s.transportMode == config.TransportModeHTTP {
+	// For HTTP mode without API token auth, extract credentials from context
+	if s.transportMode == config.TransportModeHTTP && !auth.IsAPITokenAuth(ctx) {
 		authToken := s.getHTTPAuthToken(ctx)
 		if authToken != nil {
 			if err := s.driver.VerifyAuthentication(ctx, authToken); err != nil {
@@ -79,7 +80,7 @@ func (s *Neo4jService) VerifyConnectivity(ctx context.Context) error {
 			return nil
 		}
 	}
-	// Verify database connectivity
+	// For STDIO mode or API token auth, use driver's built-in connectivity check
 	if err := s.driver.VerifyConnectivity(ctx); err != nil {
 		slog.Error("Failed to verify database connectivity", "error", err.Error())
 		return err

@@ -1,3 +1,4 @@
+// Package server provides the MCP server implementation for Flow Microstrategy.
 package server
 
 import (
@@ -319,20 +320,50 @@ func (s *Neo4jMCPServer) StartHTTPServer() error {
 	if s.config.HTTPTLSEnabled {
 		protocol = protocolHTTPS
 	}
-	slog.Info("Starting HTTP server", "address", addr, "url", fmt.Sprintf("%s://%s", protocol, addr), "tls", s.config.HTTPTLSEnabled)
+	internalURL := fmt.Sprintf("%s://%s", protocol, addr)
 
-	// Create the StreamableHTTPServer - it serves on /mcp path by default
+	// Use external base URL if configured, otherwise use internal URL
+	sseBaseURL := s.config.HTTPBaseURL
+	if sseBaseURL == "" {
+		sseBaseURL = internalURL
+	}
+
+	slog.Info("Starting HTTP server", "address", addr, "url", internalURL, "sseBaseURL", sseBaseURL, "tls", s.config.HTTPTLSEnabled)
+
+	// Create the StreamableHTTPServer for /mcp endpoint
 	mcpServerHTTP := server.NewStreamableHTTPServer(
 		s.MCPServer,
 		server.WithStateLess(true),
 	)
 
+	// Create SSE server for /sse and /message endpoints
+	sseServer := server.NewSSEServer(
+		s.MCPServer,
+		server.WithBaseURL(sseBaseURL),
+		server.WithSSEEndpoint("/sse"),
+		server.WithMessageEndpoint("/message"),
+	)
+
 	allowedOrigins := parseAllowedOrigins(s.config.HTTPAllowedOrigins)
+
+	// Create a mux to handle both transports
+	mux := http.NewServeMux()
+
+	// Register Streamable HTTP transport at /mcp
+	mux.Handle("/mcp", s.chainMiddleware(allowedOrigins, mcpServerHTTP))
+
+	// Register SSE transport endpoints using the specific handlers
+	mux.Handle("/sse", s.chainMiddleware(allowedOrigins, sseServer.SSEHandler()))
+	mux.Handle("/message", s.chainMiddleware(allowedOrigins, sseServer.MessageHandler()))
+
+	slog.Info("Registered transports", "streamable_http", "/mcp", "sse", "/sse", "sse_message", "/message")
+
 	// Wrap handler with middleware and create HTTP server
 	s.httpServer = &http.Server{
 		Addr:    addr,
-		Handler: s.chainMiddleware(allowedOrigins, mcpServerHTTP),
+		Handler: mux,
 		// Timeouts optimized for stateless HTTP MCP requests
+		// Note: SSE connections may need longer timeouts, but we keep these for security
 		ReadTimeout:       serverHTTPReadTimeout,
 		WriteTimeout:      serverHTTPWriteTimeout,
 		IdleTimeout:       serverHTTPIdleTimeout,
