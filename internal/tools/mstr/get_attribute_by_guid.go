@@ -8,13 +8,13 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-// GetAttributeByGuidInput defines the input schema for the get-attribute-by-guid tool.
-type GetAttributeByGuidInput struct {
-	Guid string `json:"guid" jsonschema:"required,description=Full GUID of the Attribute to retrieve. Exact match required."`
+// GetAttributeByGUIDInput defines the input schema for the get-attribute-by-guid tool.
+type GetAttributeByGUIDInput struct {
+	GUID string `json:"guid" jsonschema:"required,description=Full GUID of the Attribute to retrieve. Exact match required."`
 }
 
-// GetAttributeByGuidSpec returns the MCP tool specification.
-func GetAttributeByGuidSpec() mcp.Tool {
+// GetAttributeByGUIDSpec returns the MCP tool specification.
+func GetAttributeByGUIDSpec() mcp.Tool {
 	return mcp.NewTool("get-attribute-by-guid",
 		mcp.WithDescription(
 			"Get comprehensive details about a MicroStrategy Attribute by GUID. "+
@@ -26,7 +26,7 @@ func GetAttributeByGuidSpec() mcp.Tool {
 				"Use for detailed object inspection and gap analysis. "+
 				"Limited to 100 results per call.",
 		),
-		mcp.WithInputSchema[GetAttributeByGuidInput](),
+		mcp.WithInputSchema[GetAttributeByGUIDInput](),
 		mcp.WithTitleAnnotation("Get Attribute by GUID"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
@@ -35,37 +35,37 @@ func GetAttributeByGuidSpec() mcp.Tool {
 	)
 }
 
-// GetAttributeByGuidHandler returns a handler function for the get-attribute-by-guid tool.
-func GetAttributeByGuidHandler(deps *tools.ToolDependencies) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+// GetAttributeByGUIDHandler returns a handler function for the get-attribute-by-guid tool.
+func GetAttributeByGUIDHandler(deps *tools.ToolDependencies) func(context.Context, mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		return handleGetAttributeByGuid(ctx, request, deps)
+		return handleGetAttributeByGUID(ctx, request, deps)
 	}
 }
 
-func handleGetAttributeByGuid(ctx context.Context, request mcp.CallToolRequest, deps *tools.ToolDependencies) (*mcp.CallToolResult, error) {
+func handleGetAttributeByGUID(ctx context.Context, request mcp.CallToolRequest, deps *tools.ToolDependencies) (*mcp.CallToolResult, error) {
 	if deps.DBService == nil {
 		errMessage := "Database service is not initialized"
 		slog.Error(errMessage)
 		return mcp.NewToolResultError(errMessage), nil
 	}
 
-	var args GetAttributeByGuidInput
+	var args GetAttributeByGUIDInput
 	if err := request.BindArguments(&args); err != nil {
 		slog.Error("error binding arguments", "error", err)
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	if args.Guid == "" {
+	if args.GUID == "" {
 		errMessage := "guid parameter is required"
 		slog.Error(errMessage)
 		return mcp.NewToolResultError(errMessage), nil
 	}
 
 	params := map[string]any{
-		"guids": []string{args.Guid},
+		"guids": []string{args.GUID},
 	}
 
-	slog.Info("executing get-attribute-by-guid query", "guid", args.Guid)
+	slog.Info("executing get-attribute-by-guid query", "guid", args.GUID)
 
 	records, err := deps.DBService.ExecuteReadQuery(ctx, GetObjectDetailsQuery, params)
 	if err != nil {

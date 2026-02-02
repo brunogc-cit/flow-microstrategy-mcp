@@ -10,7 +10,7 @@ import (
 
 // GetReportsUsingAttributeInput defines the input schema for the get-reports-using-attribute tool.
 type GetReportsUsingAttributeInput struct {
-	Guid          string   `json:"guid" jsonschema:"required,description=GUID of the Attribute to analyze"`
+	GUID          string   `json:"guid" jsonschema:"required,description=GUID of the Attribute to analyze"`
 	PriorityLevel []string `json:"priorityLevel,omitempty" jsonschema:"description=Filter by report priority: P1-P5. Use 'All Prioritized' for any."`
 	BusinessArea  []string `json:"businessArea,omitempty" jsonschema:"description=Filter by business area. Use 'All Areas' for all."`
 	Offset        int      `json:"offset,omitempty" jsonschema:"description=Pagination offset (0, 100, 200...). Default 0."`
@@ -56,20 +56,20 @@ func handleGetReportsUsingAttribute(ctx context.Context, request mcp.CallToolReq
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	if args.Guid == "" {
+	if args.GUID == "" {
 		errMessage := "guid parameter is required"
 		slog.Error(errMessage)
 		return mcp.NewToolResultError(errMessage), nil
 	}
 
 	params := map[string]any{
-		"guids":         []string{args.Guid},
+		"guids":         []string{args.GUID},
 		"priorityLevel": args.PriorityLevel,
 		"businessArea":  args.BusinessArea,
 		"offset":        args.Offset,
 	}
 
-	slog.Info("executing get-reports-using-attribute query", "guid", args.Guid, "offset", args.Offset)
+	slog.Info("executing get-reports-using-attribute query", "guid", args.GUID, "offset", args.Offset)
 
 	records, err := deps.DBService.ExecuteReadQuery(ctx, ReportsUsingObjectsQuery, params)
 	if err != nil {

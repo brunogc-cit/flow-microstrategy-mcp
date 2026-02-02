@@ -10,7 +10,7 @@ import (
 
 // GetObjectStatsInput defines the input schema for the get-object-stats tool.
 type GetObjectStatsInput struct {
-	Guid string `json:"guid" jsonschema:"required,description=GUID of the Metric or Attribute to analyze"`
+	GUID string `json:"guid" jsonschema:"required,description=GUID of the Metric or Attribute to analyze"`
 }
 
 // GetObjectStatsSpec returns the MCP tool specification.
@@ -52,17 +52,17 @@ func handleGetObjectStats(ctx context.Context, request mcp.CallToolRequest, deps
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	if args.Guid == "" {
+	if args.GUID == "" {
 		errMessage := "guid parameter is required"
 		slog.Error(errMessage)
 		return mcp.NewToolResultError(errMessage), nil
 	}
 
 	params := map[string]any{
-		"guid": args.Guid,
+		"guid": args.GUID,
 	}
 
-	slog.Info("executing get-object-stats query", "guid", args.Guid)
+	slog.Info("executing get-object-stats query", "guid", args.GUID)
 
 	records, err := deps.DBService.ExecuteReadQuery(ctx, ObjectStatsQuery, params)
 	if err != nil {

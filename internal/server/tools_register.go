@@ -168,16 +168,16 @@ func (s *Neo4jMCPServer) getAllToolsDefs(deps *tools.ToolDependencies) []ToolDef
 		{
 			category: mstrCategory,
 			definition: server.ServerTool{
-				Tool:    mstr.GetMetricByGuidSpec(),
-				Handler: mstr.GetMetricByGuidHandler(deps),
+				Tool:    mstr.GetMetricByGUIDSpec(),
+				Handler: mstr.GetMetricByGUIDHandler(deps),
 			},
 			readonly: true,
 		},
 		{
 			category: mstrCategory,
 			definition: server.ServerTool{
-				Tool:    mstr.GetAttributeByGuidSpec(),
-				Handler: mstr.GetAttributeByGuidHandler(deps),
+				Tool:    mstr.GetAttributeByGUIDSpec(),
+				Handler: mstr.GetAttributeByGUIDHandler(deps),
 			},
 			readonly: true,
 		},

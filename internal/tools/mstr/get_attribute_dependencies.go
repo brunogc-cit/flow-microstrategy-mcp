@@ -10,7 +10,7 @@ import (
 
 // GetAttributeDependenciesInput defines the input schema for the get-attribute-dependencies tool.
 type GetAttributeDependenciesInput struct {
-	Guid   string `json:"guid" jsonschema:"required,description=GUID of the Attribute to analyze"`
+	GUID   string `json:"guid" jsonschema:"required,description=GUID of the Attribute to analyze"`
 	Offset int    `json:"offset,omitempty" jsonschema:"description=Pagination offset for direct dependencies (0, 100, 200...). Default 0."`
 }
 
@@ -55,18 +55,18 @@ func handleGetAttributeDependencies(ctx context.Context, request mcp.CallToolReq
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	if args.Guid == "" {
+	if args.GUID == "" {
 		errMessage := "guid parameter is required"
 		slog.Error(errMessage)
 		return mcp.NewToolResultError(errMessage), nil
 	}
 
 	params := map[string]any{
-		"guids":  []string{args.Guid},
+		"guids":  []string{args.GUID},
 		"offset": args.Offset,
 	}
 
-	slog.Info("executing get-attribute-dependencies query", "guid", args.Guid, "offset", args.Offset)
+	slog.Info("executing get-attribute-dependencies query", "guid", args.GUID, "offset", args.Offset)
 
 	records, err := deps.DBService.ExecuteReadQuery(ctx, DownstreamDependenciesQuery, params)
 	if err != nil {

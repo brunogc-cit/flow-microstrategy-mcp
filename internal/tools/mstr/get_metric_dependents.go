@@ -10,7 +10,7 @@ import (
 
 // GetMetricDependentsInput defines the input schema for the get-metric-dependents tool.
 type GetMetricDependentsInput struct {
-	Guid   string `json:"guid" jsonschema:"required,description=GUID of the Metric to analyze"`
+	GUID   string `json:"guid" jsonschema:"required,description=GUID of the Metric to analyze"`
 	Offset int    `json:"offset,omitempty" jsonschema:"description=Pagination offset (0, 100, 200...). Default 0."`
 }
 
@@ -55,18 +55,18 @@ func handleGetMetricDependents(ctx context.Context, request mcp.CallToolRequest,
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	if args.Guid == "" {
+	if args.GUID == "" {
 		errMessage := "guid parameter is required"
 		slog.Error(errMessage)
 		return mcp.NewToolResultError(errMessage), nil
 	}
 
 	params := map[string]any{
-		"guids":  []string{args.Guid},
+		"guids":  []string{args.GUID},
 		"offset": args.Offset,
 	}
 
-	slog.Info("executing get-metric-dependents query", "guid", args.Guid, "offset", args.Offset)
+	slog.Info("executing get-metric-dependents query", "guid", args.GUID, "offset", args.Offset)
 
 	records, err := deps.DBService.ExecuteReadQuery(ctx, UpstreamDependenciesQuery, params)
 	if err != nil {
