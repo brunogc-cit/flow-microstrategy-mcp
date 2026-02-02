@@ -36,8 +36,9 @@ func TestToolRegister(t *testing.T) {
 
 		// Expected tools that should be registered
 		// update this number when a tool is added or removed.
-		// Current tools: get-schema, read-cypher, write-cypher, list-gds-procedures
-		expectedTotalToolsCount := 4
+		// Current tools: 1 GDS (list-gds-procedures) + 12 MSTR tools = 13 total
+		// Note: cypher tools (get-schema, read-cypher, write-cypher) are hidden/commented out
+		expectedTotalToolsCount := 13
 
 		// Start server and register tools
 		err := s.Start()
@@ -66,8 +67,8 @@ func TestToolRegister(t *testing.T) {
 
 		// Expected tools that should be registered
 		// update this number when a tool is added or removed.
-		// Readonly tools: get-schema, read-cypher, list-gds-procedures
-		expectedTotalToolsCount := 3
+		// All MSTR and GDS tools are readonly, so all 13 tools are registered
+		expectedTotalToolsCount := 13
 
 		// Start server and register tools
 		err := s.Start()
@@ -95,8 +96,8 @@ func TestToolRegister(t *testing.T) {
 
 		// Expected tools that should be registered
 		// update this number when a tool is added or removed.
-		// All tools: get-schema, read-cypher, write-cypher, list-gds-procedures
-		expectedTotalToolsCount := 4
+		// All tools: 1 GDS + 12 MSTR = 13 total (no write tools currently)
+		expectedTotalToolsCount := 13
 
 		// Start server and register tools
 		err := s.Start()
@@ -125,8 +126,8 @@ func TestToolRegister(t *testing.T) {
 
 		// Expected tools that should be registered
 		// update this number when a tool is added or removed.
-		// Non-GDS tools: get-schema, read-cypher, write-cypher
-		expectedTotalToolsCount := 3
+		// Non-GDS tools: 12 MSTR tools only (list-gds-procedures excluded)
+		expectedTotalToolsCount := 12
 
 		// Start server and register tools
 		err := s.Start()
