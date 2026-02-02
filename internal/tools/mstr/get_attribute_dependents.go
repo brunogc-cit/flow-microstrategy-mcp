@@ -10,16 +10,21 @@ import (
 
 // GetAttributeDependentsInput defines the input schema for the get-attribute-dependents tool.
 type GetAttributeDependentsInput struct {
-	Guid string `json:"guid" jsonschema:"required,description=The GUID of the Attribute to analyze"`
+	Guid   string `json:"guid" jsonschema:"required,description=GUID of the Attribute to analyze"`
+	Offset int    `json:"offset,omitempty" jsonschema:"description=Pagination offset (0, 100, 200...). Default 0."`
 }
 
 // GetAttributeDependentsSpec returns the MCP tool specification.
 func GetAttributeDependentsSpec() mcp.Tool {
 	return mcp.NewTool("get-attribute-dependents",
 		mcp.WithDescription(
-			"Find what depends on a MicroStrategy Attribute (upstream dependencies). "+
-				"Shows Reports, Documents, Metrics, and other objects that use this Attribute. "+
-				"Use this for impact analysis: understanding what will be affected if the attribute changes.",
+			"Find all Reports, GridReports, and Documents that depend on an Attribute (upstream/inbound dependencies). "+
+				"Traverses the dependency graph through Prompts and Filters (up to 10 levels). "+
+				"Returns for each report: name, guid, type, priority, area, department, userCount. "+
+				"Also returns 'totalReports' count for the full dataset. "+
+				"PAGINATION: Returns 100 reports per page. Use 'offset' to paginate. "+
+				"Response includes 'moreResults' boolean. "+
+				"Use for impact analysis before modifying or deprecating an attribute.",
 		),
 		mcp.WithInputSchema[GetAttributeDependentsInput](),
 		mcp.WithTitleAnnotation("Get Attribute Dependents"),
@@ -57,10 +62,11 @@ func handleGetAttributeDependents(ctx context.Context, request mcp.CallToolReque
 	}
 
 	params := map[string]any{
-		"neodash_selected_guid": []string{args.Guid},
+		"guids":  []string{args.Guid},
+		"offset": args.Offset,
 	}
 
-	slog.Info("executing get-attribute-dependents query", "guid", args.Guid)
+	slog.Info("executing get-attribute-dependents query", "guid", args.Guid, "offset", args.Offset)
 
 	records, err := deps.DBService.ExecuteReadQuery(ctx, UpstreamDependenciesQuery, params)
 	if err != nil {
@@ -69,7 +75,7 @@ func handleGetAttributeDependents(ctx context.Context, request mcp.CallToolReque
 	}
 
 	if len(records) == 0 {
-		return mcp.NewToolResultText("No dependents found for this Attribute."), nil
+		return mcp.NewToolResultText(`{"objectName": "", "objectGUID": "", "objectType": "", "totalReports": 0, "reports": [], "moreResults": false}`), nil
 	}
 
 	response, err := deps.DBService.Neo4jRecordsToJSON(records)

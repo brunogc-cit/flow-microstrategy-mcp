@@ -10,18 +10,22 @@ import (
 
 // GetReportsUsingAttributeInput defines the input schema for the get-reports-using-attribute tool.
 type GetReportsUsingAttributeInput struct {
-	Guid          string   `json:"guid" jsonschema:"required,description=The GUID of the Attribute to look up"`
-	PriorityLevel []string `json:"priorityLevel,omitempty" jsonschema:"description=Filter reports by priority levels (e.g. ['P1 (Highest)','P2']). Use 'All Prioritized' for all."`
-	BusinessArea  []string `json:"businessArea,omitempty" jsonschema:"description=Filter reports by business areas. Use 'All Areas' for all."`
+	Guid          string   `json:"guid" jsonschema:"required,description=GUID of the Attribute to analyze"`
+	PriorityLevel []string `json:"priorityLevel,omitempty" jsonschema:"description=Filter by report priority: P1-P5. Use 'All Prioritized' for any."`
+	BusinessArea  []string `json:"businessArea,omitempty" jsonschema:"description=Filter by business area. Use 'All Areas' for all."`
+	Offset        int      `json:"offset,omitempty" jsonschema:"description=Pagination offset (0, 100, 200...). Default 0."`
 }
 
 // GetReportsUsingAttributeSpec returns the MCP tool specification.
 func GetReportsUsingAttributeSpec() mcp.Tool {
 	return mcp.NewTool("get-reports-using-attribute",
 		mcp.WithDescription(
-			"Find all MicroStrategy Reports and Documents that use a specific Attribute. "+
-				"Returns report details including name, priority, business area, department, user count, and usage pattern. "+
-				"Use this for impact analysis before migration.",
+			"Find all Reports, GridReports, and Documents that use a specific Attribute. "+
+				"Returns for each report: name, guid, type, priority (1-5), area, department, userCount. "+
+				"PAGINATION: Returns 100 reports per page. Use 'offset' to paginate. "+
+				"Response includes 'moreResults' boolean and total count via 'totalReports'. "+
+				"Note: High-usage attributes may have thousands of reports. "+
+				"Use for impact analysis: understanding what will be affected by changes.",
 		),
 		mcp.WithInputSchema[GetReportsUsingAttributeInput](),
 		mcp.WithTitleAnnotation("Get Reports Using Attribute"),
@@ -59,12 +63,13 @@ func handleGetReportsUsingAttribute(ctx context.Context, request mcp.CallToolReq
 	}
 
 	params := map[string]any{
-		"neodash_selected_guid":  []string{args.Guid},
-		"neodash_priority_level": args.PriorityLevel,
-		"neodash_business_area":  args.BusinessArea,
+		"guids":         []string{args.Guid},
+		"priorityLevel": args.PriorityLevel,
+		"businessArea":  args.BusinessArea,
+		"offset":        args.Offset,
 	}
 
-	slog.Info("executing get-reports-using-attribute query", "guid", args.Guid)
+	slog.Info("executing get-reports-using-attribute query", "guid", args.Guid, "offset", args.Offset)
 
 	records, err := deps.DBService.ExecuteReadQuery(ctx, ReportsUsingObjectsQuery, params)
 	if err != nil {
@@ -73,7 +78,7 @@ func handleGetReportsUsingAttribute(ctx context.Context, request mcp.CallToolReq
 	}
 
 	if len(records) == 0 {
-		return mcp.NewToolResultText("No reports found using this Attribute."), nil
+		return mcp.NewToolResultText(`{"objectName": "", "objectGUID": "", "objectType": "", "totalReports": 0, "reports": [], "moreResults": false}`), nil
 	}
 
 	response, err := deps.DBService.Neo4jRecordsToJSON(records)

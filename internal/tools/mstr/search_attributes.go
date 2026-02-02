@@ -10,21 +10,24 @@ import (
 
 // SearchAttributesInput defines the input schema for the search-attributes tool.
 type SearchAttributesInput struct {
-	SearchTerm    string   `json:"searchTerm,omitempty" jsonschema:"description=Comma-separated search terms to filter by name or GUID (e.g. 'date,customer')"`
-	PriorityLevel []string `json:"priorityLevel,omitempty" jsonschema:"description=Filter by priority levels (e.g. ['P1 (Highest)','P2']). Use 'All Prioritized' for all."`
-	BusinessArea  []string `json:"businessArea,omitempty" jsonschema:"description=Filter by business areas. Use 'All Areas' for all."`
-	Status        []string `json:"status,omitempty" jsonschema:"description=Filter by parity status values. Use 'All Status' for all."`
-	DataDomain    []string `json:"dataDomain,omitempty" jsonschema:"description=Filter by data domains. Use 'All Domains' for all."`
+	SearchTerm    string   `json:"searchTerm,omitempty" jsonschema:"description=Search by name or GUID (case-insensitive). Use comma-separated values for multiple terms."`
+	PriorityLevel []string `json:"priorityLevel,omitempty" jsonschema:"description=Filter by report priority: P1 (Highest) through P5 (Lowest). Use 'All Prioritized' for any priority."`
+	BusinessArea  []string `json:"businessArea,omitempty" jsonschema:"description=Filter by business area. Use 'All Areas' for all."`
+	Status        []string `json:"status,omitempty" jsonschema:"description=Filter by parity status: Complete, Planned, Not Planned, No Status. Use 'All Status' for all."`
+	DataDomain    []string `json:"dataDomain,omitempty" jsonschema:"description=Filter by data domain. Use 'All Domains' for all."`
+	Offset        int      `json:"offset,omitempty" jsonschema:"description=Pagination offset. Start at 0 and increment by 100 for each page."`
 }
 
 // SearchAttributesSpec returns the MCP tool specification.
 func SearchAttributesSpec() mcp.Tool {
 	return mcp.NewTool("search-attributes",
 		mcp.WithDescription(
-			"Search for MicroStrategy Attributes that are used by prioritized reports. "+
-				"Returns attributes with type, priority, name, status, team, report count, and source table count. "+
-				"Use this to find which attributes are most impactful for Power BI migration planning. "+
-				"All filter parameters are optional.",
+			"Search for MicroStrategy Attributes used by prioritized reports. "+
+				"Returns: type, name, guid, status, priority, team, reportCount, tableCount. "+
+				"Results are ordered by report count (most impactful first). "+
+				"PAGINATION: Returns 100 results per page. Use 'offset' parameter to paginate. "+
+				"Response includes 'moreResults' boolean - if true, call again with offset+100. "+
+				"Use for finding high-impact attributes for migration planning.",
 		),
 		mcp.WithInputSchema[SearchAttributesInput](),
 		mcp.WithTitleAnnotation("Search Attributes"),
@@ -62,9 +65,10 @@ func handleSearchAttributes(ctx context.Context, request mcp.CallToolRequest, de
 		"neodash_business_area":  args.BusinessArea,
 		"neodash_status":         args.Status,
 		"neodash_data_domain":    args.DataDomain,
+		"offset":                 args.Offset,
 	}
 
-	slog.Info("executing search-attributes query", "searchTerm", args.SearchTerm)
+	slog.Info("executing search-attributes query", "searchTerm", args.SearchTerm, "offset", args.Offset)
 
 	records, err := deps.DBService.ExecuteReadQuery(ctx, SearchObjectsQuery, params)
 	if err != nil {
@@ -73,7 +77,7 @@ func handleSearchAttributes(ctx context.Context, request mcp.CallToolRequest, de
 	}
 
 	if len(records) == 0 {
-		return mcp.NewToolResultText("No Attributes found matching the specified criteria."), nil
+		return mcp.NewToolResultText(`{"results": [], "moreResults": false}`), nil
 	}
 
 	response, err := deps.DBService.Neo4jRecordsToJSON(records)

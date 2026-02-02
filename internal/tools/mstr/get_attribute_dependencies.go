@@ -10,16 +10,21 @@ import (
 
 // GetAttributeDependenciesInput defines the input schema for the get-attribute-dependencies tool.
 type GetAttributeDependenciesInput struct {
-	Guid string `json:"guid" jsonschema:"required,description=The GUID of the Attribute to analyze"`
+	Guid   string `json:"guid" jsonschema:"required,description=GUID of the Attribute to analyze"`
+	Offset int    `json:"offset,omitempty" jsonschema:"description=Pagination offset for direct dependencies (0, 100, 200...). Default 0."`
 }
 
 // GetAttributeDependenciesSpec returns the MCP tool specification.
 func GetAttributeDependenciesSpec() mcp.Tool {
 	return mcp.NewTool("get-attribute-dependencies",
 		mcp.WithDescription(
-			"Find what a MicroStrategy Attribute depends on (downstream dependencies). "+
-				"Traverses the dependency chain up to 10 levels deep showing other Attributes, Columns, and related objects. "+
-				"Use this to understand the complete definition chain of an attribute.",
+			"Find what an Attribute directly depends on (downstream/outbound dependencies). "+
+				"Returns two parts: "+
+				"(1) directDependencies: Objects at 1-hop distance (Facts, Metrics, Attributes, Columns) with type, name, guid, formula. "+
+				"(2) transitiveTableCount: Total count of tables reachable through the full dependency chain (2-10 hops). "+
+				"PAGINATION: Direct dependencies are paginated (100 per page). Use 'offset' to paginate. "+
+				"Response includes 'moreResults' boolean and 'totalDirectDeps' count. "+
+				"Use for understanding attribute structure and data lineage.",
 		),
 		mcp.WithInputSchema[GetAttributeDependenciesInput](),
 		mcp.WithTitleAnnotation("Get Attribute Dependencies"),
@@ -57,10 +62,11 @@ func handleGetAttributeDependencies(ctx context.Context, request mcp.CallToolReq
 	}
 
 	params := map[string]any{
-		"neodash_selected_guid": []string{args.Guid},
+		"guids":  []string{args.Guid},
+		"offset": args.Offset,
 	}
 
-	slog.Info("executing get-attribute-dependencies query", "guid", args.Guid)
+	slog.Info("executing get-attribute-dependencies query", "guid", args.Guid, "offset", args.Offset)
 
 	records, err := deps.DBService.ExecuteReadQuery(ctx, DownstreamDependenciesQuery, params)
 	if err != nil {
@@ -69,7 +75,7 @@ func handleGetAttributeDependencies(ctx context.Context, request mcp.CallToolReq
 	}
 
 	if len(records) == 0 {
-		return mcp.NewToolResultText("No dependencies found for this Attribute."), nil
+		return mcp.NewToolResultText(`{"objectName": "", "objectGUID": "", "objectType": "", "totalDirectDeps": 0, "transitiveTableCount": 0, "directDependencies": [], "moreResults": false}`), nil
 	}
 
 	response, err := deps.DBService.Neo4jRecordsToJSON(records)

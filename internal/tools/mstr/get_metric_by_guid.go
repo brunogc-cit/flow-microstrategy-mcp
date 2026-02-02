@@ -10,16 +10,21 @@ import (
 
 // GetMetricByGuidInput defines the input schema for the get-metric-by-guid tool.
 type GetMetricByGuidInput struct {
-	Guid string `json:"guid" jsonschema:"required,description=The GUID of the Metric to retrieve (supports prefix matching)"`
+	Guid string `json:"guid" jsonschema:"required,description=Full GUID of the Metric to retrieve. Exact match required."`
 }
 
 // GetMetricByGuidSpec returns the MCP tool specification.
 func GetMetricByGuidSpec() mcp.Tool {
 	return mcp.NewTool("get-metric-by-guid",
 		mcp.WithDescription(
-			"Get detailed information about a MicroStrategy Metric by its GUID. "+
-				"Returns parity status, team, EDW/ADE table mappings, Power BI semantic model info, and migration notes. "+
-				"Supports prefix matching - you can provide the first characters of the GUID.",
+			"Get comprehensive details about a MicroStrategy Metric by GUID. "+
+				"Returns 22 fields including: name, status, team, priority, formula, "+
+				"EDW/ADE mappings (edwTable, edwColumn, adeTable, adeColumn), "+
+				"Power BI mappings (semanticName, semanticModel), "+
+				"Databricks mappings (raw, serve), "+
+				"and pre-computed counts (reportCount, tableCount). "+
+				"Use for detailed object inspection and gap analysis. "+
+				"Limited to 100 results per call.",
 		),
 		mcp.WithInputSchema[GetMetricByGuidInput](),
 		mcp.WithTitleAnnotation("Get Metric by GUID"),
@@ -57,7 +62,7 @@ func handleGetMetricByGuid(ctx context.Context, request mcp.CallToolRequest, dep
 	}
 
 	params := map[string]any{
-		"neodash_selected_guid": []string{args.Guid},
+		"guids": []string{args.Guid},
 	}
 
 	slog.Info("executing get-metric-by-guid query", "guid", args.Guid)
@@ -66,16 +71,6 @@ func handleGetMetricByGuid(ctx context.Context, request mcp.CallToolRequest, dep
 	if err != nil {
 		slog.Error("error executing get-metric-by-guid query", "error", err)
 		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	// Filter only Metric results
-	var metricRecords []*interface{}
-	for _, record := range records {
-		if typeVal, ok := record.Get("Type"); ok {
-			if typeStr, ok := typeVal.(string); ok && typeStr == "Metric" {
-				metricRecords = append(metricRecords, nil) // placeholder
-			}
-		}
 	}
 
 	if len(records) == 0 {

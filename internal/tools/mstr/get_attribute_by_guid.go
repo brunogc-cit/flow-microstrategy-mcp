@@ -10,16 +10,21 @@ import (
 
 // GetAttributeByGuidInput defines the input schema for the get-attribute-by-guid tool.
 type GetAttributeByGuidInput struct {
-	Guid string `json:"guid" jsonschema:"required,description=The GUID of the Attribute to retrieve (supports prefix matching)"`
+	Guid string `json:"guid" jsonschema:"required,description=Full GUID of the Attribute to retrieve. Exact match required."`
 }
 
 // GetAttributeByGuidSpec returns the MCP tool specification.
 func GetAttributeByGuidSpec() mcp.Tool {
 	return mcp.NewTool("get-attribute-by-guid",
 		mcp.WithDescription(
-			"Get detailed information about a MicroStrategy Attribute by its GUID. "+
-				"Returns parity status, team, EDW/ADE table mappings, Power BI semantic model info, and migration notes. "+
-				"Supports prefix matching - you can provide the first characters of the GUID.",
+			"Get comprehensive details about a MicroStrategy Attribute by GUID. "+
+				"Returns 22 fields including: name, status, team, priority, formula, "+
+				"EDW/ADE mappings (edwTable, edwColumn, adeTable, adeColumn), "+
+				"Power BI mappings (semanticName, semanticModel), "+
+				"Databricks mappings (raw, serve), "+
+				"and pre-computed counts (reportCount, tableCount). "+
+				"Use for detailed object inspection and gap analysis. "+
+				"Limited to 100 results per call.",
 		),
 		mcp.WithInputSchema[GetAttributeByGuidInput](),
 		mcp.WithTitleAnnotation("Get Attribute by GUID"),
@@ -57,7 +62,7 @@ func handleGetAttributeByGuid(ctx context.Context, request mcp.CallToolRequest, 
 	}
 
 	params := map[string]any{
-		"neodash_selected_guid": []string{args.Guid},
+		"guids": []string{args.Guid},
 	}
 
 	slog.Info("executing get-attribute-by-guid query", "guid", args.Guid)

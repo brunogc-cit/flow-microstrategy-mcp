@@ -281,5 +281,33 @@ func (s *Neo4jMCPServer) getAllToolsDefs(deps *tools.ToolDependencies) []ToolDef
 			},
 			readonly: true,
 		},
+
+		// =============================================================================
+		// MicroStrategy Migration Tools - Statistics
+		// =============================================================================
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.GetMetricsStatsSpec(),
+				Handler: mstr.GetMetricsStatsHandler(deps),
+			},
+			readonly: true,
+		},
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.GetAttributesStatsSpec(),
+				Handler: mstr.GetAttributesStatsHandler(deps),
+			},
+			readonly: true,
+		},
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.GetObjectStatsSpec(),
+				Handler: mstr.GetObjectStatsHandler(deps),
+			},
+			readonly: true,
+		},
 	}
 }

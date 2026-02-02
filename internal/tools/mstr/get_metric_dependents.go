@@ -10,16 +10,21 @@ import (
 
 // GetMetricDependentsInput defines the input schema for the get-metric-dependents tool.
 type GetMetricDependentsInput struct {
-	Guid string `json:"guid" jsonschema:"required,description=The GUID of the Metric to analyze"`
+	Guid   string `json:"guid" jsonschema:"required,description=GUID of the Metric to analyze"`
+	Offset int    `json:"offset,omitempty" jsonschema:"description=Pagination offset (0, 100, 200...). Default 0."`
 }
 
 // GetMetricDependentsSpec returns the MCP tool specification.
 func GetMetricDependentsSpec() mcp.Tool {
 	return mcp.NewTool("get-metric-dependents",
 		mcp.WithDescription(
-			"Find what depends on a MicroStrategy Metric (upstream dependencies). "+
-				"Shows Reports, Documents, and other objects that use this Metric. "+
-				"Use this for impact analysis: understanding what will be affected if the metric changes.",
+			"Find all Reports, GridReports, and Documents that depend on a Metric (upstream/inbound dependencies). "+
+				"Traverses the dependency graph through Prompts and Filters (up to 10 levels). "+
+				"Returns for each report: name, guid, type, priority, area, department, userCount. "+
+				"Also returns 'totalReports' count for the full dataset. "+
+				"PAGINATION: Returns 100 reports per page. Use 'offset' to paginate. "+
+				"Response includes 'moreResults' boolean. "+
+				"Use for impact analysis before modifying or deprecating a metric.",
 		),
 		mcp.WithInputSchema[GetMetricDependentsInput](),
 		mcp.WithTitleAnnotation("Get Metric Dependents"),
@@ -57,10 +62,11 @@ func handleGetMetricDependents(ctx context.Context, request mcp.CallToolRequest,
 	}
 
 	params := map[string]any{
-		"neodash_selected_guid": []string{args.Guid},
+		"guids":  []string{args.Guid},
+		"offset": args.Offset,
 	}
 
-	slog.Info("executing get-metric-dependents query", "guid", args.Guid)
+	slog.Info("executing get-metric-dependents query", "guid", args.Guid, "offset", args.Offset)
 
 	records, err := deps.DBService.ExecuteReadQuery(ctx, UpstreamDependenciesQuery, params)
 	if err != nil {
@@ -69,7 +75,7 @@ func handleGetMetricDependents(ctx context.Context, request mcp.CallToolRequest,
 	}
 
 	if len(records) == 0 {
-		return mcp.NewToolResultText("No dependents found for this Metric."), nil
+		return mcp.NewToolResultText(`{"objectName": "", "objectGUID": "", "objectType": "", "totalReports": 0, "reports": [], "moreResults": false}`), nil
 	}
 
 	response, err := deps.DBService.Neo4jRecordsToJSON(records)
