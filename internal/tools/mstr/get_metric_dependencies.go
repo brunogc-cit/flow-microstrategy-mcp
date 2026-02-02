@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools"
+	"github.com/mark3labs/mcp-go/mcp"
 )
 
 // GetMetricDependenciesInput defines the input schema for the get-metric-dependencies tool.

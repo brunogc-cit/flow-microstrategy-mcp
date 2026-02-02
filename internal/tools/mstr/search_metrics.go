@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools"
+	"github.com/mark3labs/mcp-go/mcp"
 )
 
 // SearchMetricsInput defines the input schema for the search-metrics tool.
