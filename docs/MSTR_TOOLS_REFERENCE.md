@@ -1,560 +1,805 @@
-# MicroStrategy MCP Tools - Reference for the Cypher Team
+# MicroStrategy MCP Tools - Reference
 
-This document describes the existing MCP tools for querying MicroStrategy metadata, their corresponding Cypher queries, and relevant information for creating and optimising new queries.
+This document provides a complete reference for the MicroStrategy MCP tools, including Cypher queries, input parameters, and LLM-facing descriptions.
+
+For the specification document, see [103-mcp-tools-reference.md](./flowdash-queries/103-mcp-tools-reference.md).
 
 ## Table of Contents
 
 1. [Tools Overview](#tools-overview)
-2. [Tools and Detailed Queries](#tools-and-detailed-queries)
-3. [User Questions Mapping](#user-questions-mapping)
-4. [Questions Not Yet Answered](#questions-not-yet-answered)
-5. [Database Schema](#database-schema)
-6. [Optimisation Considerations](#optimisation-considerations)
-7. [Guidelines for New Queries](#guidelines-for-new-queries)
+2. [Design Principles](#design-principles)
+3. [Tool 1: search-metrics](#tool-1-search-metrics)
+4. [Tool 2: search-attributes](#tool-2-search-attributes)
+5. [Tool 3: trace-metric](#tool-3-trace-metric)
+6. [Tool 4: trace-attribute](#tool-4-trace-attribute)
+7. [Key Differences Between Tools](#key-differences-between-tools)
+8. [Common Workflows](#common-workflows)
+9. [Graph Traversal Rules](#graph-traversal-rules)
+10. [Database Schema](#database-schema)
+11. [Migration from Previous Tools](#migration-from-previous-tools)
 
 ---
 
 ## Tools Overview
 
-The system has **12 MicroStrategy tools** organised into categories:
+The system has **4 MicroStrategy tools** organised into two categories:
 
-### GUID Queries
-| Tool | Description | Query Used |
-|------|-------------|------------|
-| `get-metric-by-guid` | Details of a Metric by GUID | `GetObjectDetailsQuery` |
-| `get-attribute-by-guid` | Details of an Attribute by GUID | `GetObjectDetailsQuery` |
+### Search Tools (Find Objects)
+| Tool | Description | Input |
+|------|-------------|-------|
+| `search-metrics` | Find Metrics by GUID or name | GUID (full/partial) or name |
+| `search-attributes` | Find Attributes by GUID or name | GUID (full/partial) or name |
 
-### Search with Filters
-| Tool | Description | Query Used |
-|------|-------------|------------|
-| `search-metrics` | Search Metrics with filters | `SearchObjectsQuery` |
-| `search-attributes` | Search Attributes with filters | `SearchObjectsQuery` |
-
-### Reports/Dependents
-| Tool | Description | Query Used |
-|------|-------------|------------|
-| `get-reports-using-metric` | Reports that use a Metric | `ReportsUsingObjectsQuery` |
-| `get-reports-using-attribute` | Reports that use an Attribute | `ReportsUsingObjectsQuery` |
-
-### Source Tables (Lineage)
-| Tool | Description | Query Used |
-|------|-------------|------------|
-| `get-metric-source-tables` | Source tables of a Metric | `SourceTablesQuery` |
-| `get-attribute-source-tables` | Source tables of an Attribute | `SourceTablesQuery` |
-
-### Downstream Dependencies (what it depends on)
-| Tool | Description | Query Used |
-|------|-------------|------------|
-| `get-metric-dependencies` | What the Metric depends on | `DownstreamDependenciesQuery` |
-| `get-attribute-dependencies` | What the Attribute depends on | `DownstreamDependenciesQuery` |
-
-### Upstream Dependents (what depends on it)
-| Tool | Description | Query Used |
-|------|-------------|------------|
-| `get-metric-dependents` | What depends on the Metric | `UpstreamDependenciesQuery` |
-| `get-attribute-dependents` | What depends on the Attribute | `UpstreamDependenciesQuery` |
+### Trace Tools (Explore Lineage)
+| Tool | Description | Input |
+|------|-------------|-------|
+| `trace-metric` | Trace Metric lineage by direction | Full GUID + direction |
+| `trace-attribute` | Trace Attribute lineage by direction | Full GUID + direction |
 
 ---
 
-## Tools and Detailed Queries
+## Design Principles
 
-### Query 1: `GetObjectDetailsQuery`
+### 1. Return All Matching Objects (Including Unprioritized/Unmapped)
 
-**Tools that use it:** `get-metric-by-guid`, `get-attribute-by-guid`
+The tools return **ALL** Metrics/Attributes matching the query, including those without parity mapping or priority assignment. This design decision ensures:
 
-**Parameters:**
-- `neodash_selected_guid` (array of strings): Object GUIDs (supports prefix matching with STARTS WITH)
+- Complete visibility into the MicroStrategy object inventory
+- No objects are hidden due to missing parity matrix entries
+- Users can discover objects that need to be added to parity tracking
 
-**Returns:** Type, GUID, Name, Status, Group, SubGroup, Team, RAW, SERVE, SEMANTIC, EDWTable, EDWColumn, ADETable, ADEColumn, SemanticName, SemanticModel, DBEssential, PBEssential, Notes
+**Status Values:**
+| Status | Meaning |
+|--------|---------|
+| `Complete` | Migration/implementation is complete |
+| `Planned` | Migration is planned |
+| `Not Planned` | Object is not planned for migration |
+| `Drop` | Object will be deprecated |
+| `No Status` | Object is not in the parity matrix (unmapped) |
+
+### 2. Updated Properties Take Precedence
+
+Properties with the `updated_` prefix override their base counterparts. This allows manual corrections from ADO backlog sync to take precedence over computed values.
+
+| Property | Updated Version | Behavior |
+|----------|-----------------|----------|
+| `parity_status` | `updated_parity_status` | `COALESCE(updated_parity_status, parity_status, 'No Status')` |
+| `parity_notes` | `updated_parity_notes` | `COALESCE(updated_parity_notes, parity_notes)` |
+| `db_raw` | `updated_db_raw` | `COALESCE(updated_db_raw, db_raw)` |
+| `db_serve` | `updated_db_serve` | `COALESCE(updated_db_serve, db_serve)` |
+| `edw_table` | `updated_edw_table` | `COALESCE(updated_edw_table, edw_table)` |
+| `ade_db_table` | `updated_ade_db_table` | `COALESCE(updated_ade_db_table, ade_db_table)` |
+| `ado_link` | `updated_ado_link` | `COALESCE(updated_ado_link, ado_link)` |
+
+**Example:** If an object has `parity_status = "Planned"` but `updated_parity_status = "Complete"`, the effective status returned is `"Complete"`.
+
+### 3. Directional Lineage Tracing
+
+Trace tools require a `direction` parameter to avoid returning too much data in a single call:
+
+| Direction | Description | Returns | Graph Traversal |
+|-----------|-------------|---------|-----------------|
+| `downstream` | Who uses this M/A? | reports[] | M/A → Reports (reverse dependency) |
+| `upstream` | Where does data come from? | tables[], dependencies[] | M/A → Facts → Tables (forward dependency) |
+
+**Why Split?**
+- High-connectivity objects (e.g., "Retail Sales Value" with 6,000+ reports) would return excessive data
+- LLM queries typically need one direction at a time
+- Reduces response size and improves clarity
+
+```
+UPSTREAM (sources)                                DOWNSTREAM (consumers)
+    Tables ──→ Facts ──→ Metrics/Attributes ──→ Reports
+              ←─────── trace(direction="upstream") ───────
+              ─────── trace(direction="downstream") ─────→
+```
+
+### 4. Full Property Set Returned
+
+All tools return the complete set of 21 properties per object, enabling comprehensive analysis without additional queries:
+
+| Category | Properties |
+|----------|------------|
+| **Identity** | `type`, `guid`, `name` |
+| **Parity** | `status`, `priority`, `notes` |
+| **Definition** | `formula` (Metrics) or `forms_json` (Attributes) |
+| **Databricks Mapping** | `raw`, `serve`, `semantic` |
+| **EDW Mapping** | `edwTable`, `edwColumn` |
+| **ADE Mapping** | `adeTable`, `adeColumn` |
+| **Power BI Mapping** | `semanticName`, `semanticModel` |
+| **Essential Flags** | `dbEssential`, `pbEssential` |
+| **Lineage Counts** | `reportCount`, `tableCount` |
+| **Integration** | `ado_link` |
+
+---
+
+## Tool 1: search-metrics
+
+**Source:** `internal/tools/mstr/search_metrics.go`
+
+### Input Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | Yes | — | GUID (full or partial 8+ chars) or name search term |
+| `status` | []string | No | null | Filter by parity status: `["Complete", "Planned", "Not Planned"]` |
+| `offset` | int | No | 0 | Skip first N results for pagination |
+
+### LLM-Facing Description
+
+```
+Find Metrics by GUID or name. Accepts full GUIDs, partial GUIDs (8+ chars), or name search terms.
+
+CORRECT USAGE:
+- search-metrics(query="2F00974D44E1D0D24CA344ABD872806A") - full GUID
+- search-metrics(query="2F00974D") - partial GUID (8+ chars)
+- search-metrics(query="Retail Sales") - name search
+- search-metrics(query="sales", status=["Complete"]) - with filter
+
+INCORRECT USAGE:
+- DON'T use partial GUID < 8 chars (too ambiguous)
+- DON'T use for lineage - use trace-metric instead
+- DON'T search for Attributes here - use search-attributes
+
+PAGINATION: Returns 100 results. If moreResults=true, call again with offset+100.
+```
+
+### Cypher Query
 
 ```cypher
-WITH $neodash_selected_guid as selectedGuids
-WHERE selectedGuids IS NOT NULL AND size(selectedGuids) > 0
+// Search for Metrics by GUID or name
+// $query: GUID (full/partial) or name search term
+// $status: optional parity status filter
+// $offset: pagination offset (0, 100, 200, ...)
+
+// Determine if query looks like a GUID (hex chars, 8+ length)
+WITH $query as query,
+     $query =~ '^[A-Fa-f0-9]{8,}$' as isGuidLike
+
 MATCH (n:Metric)
-WHERE any(g IN selectedGuids WHERE n.guid STARTS WITH g)
+WHERE n.guid IS NOT NULL
+  AND (
+    // GUID match: exact or partial (starts with)
+    (isGuidLike AND (n.guid = query OR n.guid STARTS WITH toUpper(query)))
+    OR
+    // Name match: case-insensitive contains
+    (NOT isGuidLike AND toLower(n.name) CONTAINS toLower(query))
+  )
+  AND ($status IS NULL OR COALESCE(n.updated_parity_status, n.parity_status) IN $status)
+
+// Compute effective status (updated takes precedence)
+WITH n,
+     COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
+
+ORDER BY n.name ASC
+SKIP $offset
+LIMIT 101  // Fetch 101 to determine if more results exist
+
+// Collect results
+WITH collect({
+  type: 'Metric',
+  guid: n.guid,
+  name: n.name,
+  status: effectiveStatus,
+  formula: n.formula,
+  ado_link: n.ado_link
+}) as fetched
+
+// Return first 100; moreResults=true if 101st exists
 RETURN 
-  'Metric' as Type,
-  n.guid as GUID,
-  n.name as Name,
-  CASE WHEN n.updated_parity_status IS NOT NULL AND n.updated_parity_status <> '' 
-       THEN n.updated_parity_status ELSE n.parity_status END as Status,
-  n.parity_group as Group,
-  n.parity_subgroup as SubGroup,
-  n.parity_team as Team,
-  n.db_raw as RAW,
-  n.db_serve as SERVE,
-  n.pb_semantic as SEMANTIC,
-  n.edw_table as EDWTable,
-  n.edw_column as EDWColumn,
-  n.ade_db_table as ADETable,
-  n.ade_db_column as ADEColumn,
-  n.pb_semantic_name as SemanticName,
-  n.pb_semantic_model as SemanticModel,
-  n.db_essential as DBEssential,
-  n.pb_essential as PBEssential,
-  n.parity_notes as Notes
-UNION
-WITH $neodash_selected_guid as selectedGuids
-WHERE selectedGuids IS NOT NULL AND size(selectedGuids) > 0
+  fetched[0..100] as results,
+  size(fetched) > 100 as moreResults
+```
+
+### Response Structure
+
+```json
+{
+  "results": [
+    {
+      "type": "Metric",
+      "guid": "E50193A144D3BBAA4B8C938EBFBDA01A",
+      "name": "Retail Sales Value",
+      "status": "Complete",
+      "priority": 0,
+      "formula": "( Sum ( Billed Sales Value Inc Tax ) - Sum ( Billed Sales Checkout Tax Amount ) )",
+      "notes": "+ afs, pf in ade",
+      "raw": "Y",
+      "serve": "Y",
+      "semantic": "Y",
+      "edwTable": "[presentation].[vwFactSales]",
+      "edwColumn": "BilledSalesAmountIncTax-BilledSalesCheckoutTaxAmount",
+      "adeTable": "sales.serve.fact_billed_sale_v1",
+      "adeColumn": "retail_value",
+      "semanticName": "Retail Sales Value",
+      "semanticModel": "Trade",
+      "dbEssential": "Y",
+      "pbEssential": "Y",
+      "reportCount": 888,
+      "tableCount": 1,
+      "ado_link": "https://dev.azure.com/org/project/_workitems/edit/12345"
+    }
+  ],
+  "moreResults": true
+}
+```
+
+---
+
+## Tool 2: search-attributes
+
+**Source:** `internal/tools/mstr/search_attributes.go`
+
+### Input Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | Yes | — | GUID (full or partial 8+ chars) or name search term |
+| `status` | []string | No | null | Filter by parity status: `["Complete", "Planned", "Not Planned"]` |
+| `offset` | int | No | 0 | Skip first N results for pagination |
+
+### LLM-Facing Description
+
+```
+Find Attributes by GUID or name. Accepts full GUIDs, partial GUIDs (8+ chars), or name search terms.
+
+CORRECT USAGE:
+- search-attributes(query="BC105EDE477D7CEF3296FFA6E4D26797") - full GUID
+- search-attributes(query="BC105EDE") - partial GUID (8+ chars)
+- search-attributes(query="Product Category") - name search
+- search-attributes(query="product", status=["Complete"]) - with filter
+
+INCORRECT USAGE:
+- DON'T use partial GUID < 8 chars (too ambiguous)
+- DON'T use for lineage - use trace-attribute instead
+- DON'T search for Metrics here - use search-metrics
+
+PAGINATION: Returns 100 results. If moreResults=true, call again with offset+100.
+```
+
+### Cypher Query
+
+```cypher
+// Search for Attributes by GUID or name
+// $query: GUID (full/partial) or name search term
+// $status: optional parity status filter
+// $offset: pagination offset (0, 100, 200, ...)
+
+// Determine if query looks like a GUID (hex chars, 8+ length)
+WITH $query as query,
+     $query =~ '^[A-Fa-f0-9]{8,}$' as isGuidLike
+
 MATCH (n:Attribute)
-WHERE any(g IN selectedGuids WHERE n.guid STARTS WITH g)
+WHERE n.guid IS NOT NULL
+  AND (
+    // GUID match: exact or partial (starts with)
+    (isGuidLike AND (n.guid = query OR n.guid STARTS WITH toUpper(query)))
+    OR
+    // Name match: case-insensitive contains
+    (NOT isGuidLike AND toLower(n.name) CONTAINS toLower(query))
+  )
+  AND ($status IS NULL OR COALESCE(n.updated_parity_status, n.parity_status) IN $status)
+
+// Compute effective status (updated takes precedence)
+WITH n,
+     COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
+
+ORDER BY n.name ASC
+SKIP $offset
+LIMIT 101  // Fetch 101 to determine if more results exist
+
+// Collect results
+WITH collect({
+  type: 'Attribute',
+  guid: n.guid,
+  name: n.name,
+  status: effectiveStatus,
+  forms_json: n.forms_json,
+  ado_link: n.ado_link
+}) as fetched
+
+// Return first 100; moreResults=true if 101st exists
 RETURN 
-  'Attribute' as Type,
-  n.guid as GUID,
-  n.name as Name,
-  CASE WHEN n.updated_parity_status IS NOT NULL AND n.updated_parity_status <> '' 
-       THEN n.updated_parity_status ELSE n.parity_status END as Status,
-  n.parity_group as Group,
-  n.parity_subgroup as SubGroup,
-  n.parity_team as Team,
-  n.db_raw as RAW,
-  n.db_serve as SERVE,
-  n.pb_semantic as SEMANTIC,
-  n.edw_table as EDWTable,
-  n.edw_column as EDWColumn,
-  n.ade_db_table as ADETable,
-  n.ade_db_column as ADEColumn,
-  n.pb_semantic_name as SemanticName,
-  n.pb_semantic_model as SemanticModel,
-  n.db_essential as DBEssential,
-  n.pb_essential as PBEssential,
-  n.parity_notes as Notes
+  fetched[0..100] as results,
+  size(fetched) > 100 as moreResults
 ```
 
----
+### Response Structure
 
-### Query 2: `SearchObjectsQuery`
-
-**Tools that use it:** `search-metrics`, `search-attributes`
-
-**Parameters:**
-- `neodash_searchterm` (string): Search terms separated by comma
-- `neodash_objecttype` (string): "Metric", "Attribute" or "All Types"
-- `neodash_priority_level` (array): Priority levels such as "P1 (Highest)", "P2", etc.
-- `neodash_business_area` (array): Business areas
-- `neodash_status` (array): Parity status values
-- `neodash_data_domain` (array): Data domains
-
-**Returns:** Type, Priority, Name, Status, Team, Reports (count), Tables (count), GUID
-
-```cypher
-WITH CASE WHEN coalesce($neodash_searchterm, '') = '' THEN null ELSE [term IN split($neodash_searchterm, ',') | toLower(trim(term))] END as searchTerms,
-     CASE WHEN coalesce($neodash_objecttype, '') = '' OR $neodash_objecttype = 'All Types' THEN ['Metric', 'Attribute'] ELSE [$neodash_objecttype] END as typeFilter,
-     CASE WHEN $neodash_priority_level IS NULL OR size($neodash_priority_level) = 0 OR 'All Prioritized' IN $neodash_priority_level THEN null ELSE [p IN $neodash_priority_level | toInteger(replace(replace(replace(p, 'P', ''), ' (Highest)', ''), ' (Lowest)', ''))] END as priorityLevelFilter,
-     CASE WHEN $neodash_business_area IS NULL OR size($neodash_business_area) = 0 OR 'All Areas' IN $neodash_business_area THEN null ELSE $neodash_business_area END as businessAreaFilter,
-     CASE WHEN $neodash_status IS NULL OR size($neodash_status) = 0 OR 'All Status' IN $neodash_status THEN null ELSE $neodash_status END as filterStatusList,
-     CASE WHEN $neodash_data_domain IS NULL OR size($neodash_data_domain) = 0 OR 'All Domains' IN $neodash_data_domain THEN null ELSE $neodash_data_domain END as dataDomainFilter
-MATCH (n:MSTRObject)
-WHERE n.type IN typeFilter
-  AND n.guid IS NOT NULL
-  AND n.inherited_priority_level IS NOT NULL
-  AND (searchTerms IS NULL OR any(term IN searchTerms WHERE toLower(n.name) CONTAINS term OR toLower(n.guid) CONTAINS term))
-  AND (dataDomainFilter IS NULL OR ALL(domain IN dataDomainFilter WHERE EXISTS { MATCH (dp:DataProduct {name: domain})-[:BELONGS_TO]->(n) }))
-WITH n, priorityLevelFilter, businessAreaFilter, filterStatusList,
-     CASE WHEN n.updated_parity_status IS NOT NULL AND n.updated_parity_status <> '' 
-          THEN n.updated_parity_status ELSE n.parity_status END as effectiveStatus
-WHERE (filterStatusList IS NULL OR effectiveStatus IN filterStatusList)
-  AND (businessAreaFilter IS NULL OR ALL(ba IN businessAreaFilter WHERE EXISTS { MATCH (r2:MSTRObject)-[:DEPENDS_ON]->(n) WHERE r2.type IN ['Report', 'GridReport', 'Document'] AND r2.priority_level IS NOT NULL AND r2.usage_area = ba } OR EXISTS { MATCH (r2:MSTRObject)-[:DEPENDS_ON]->(fp:MSTRObject)-[:DEPENDS_ON]->(n) WHERE r2.type IN ['Report', 'GridReport', 'Document'] AND r2.priority_level IS NOT NULL AND fp.type IN ['Filter', 'Prompt'] AND r2.usage_area = ba }))
-CALL {
-  WITH n, priorityLevelFilter, businessAreaFilter, effectiveStatus
-  MATCH (r:MSTRObject)-[:DEPENDS_ON]->(n)
-  WHERE r.type IN ['Report', 'GridReport', 'Document']
-    AND r.priority_level IS NOT NULL
-    AND (priorityLevelFilter IS NULL OR r.priority_level IN priorityLevelFilter)
-    AND (businessAreaFilter IS NULL OR r.usage_area IN businessAreaFilter)
-  RETURN collect(DISTINCT r.guid) as directGuids
+```json
+{
+  "results": [
+    {
+      "type": "Attribute",
+      "guid": "BC105EDE477D7CEF3296FFA6E4D26797",
+      "name": "Product Category",
+      "status": "Complete",
+      "priority": 0,
+      "forms_json": "{\"ID\": \"product_category_id\", \"DESC\": \"product_category_desc\"}",
+      "notes": null,
+      "raw": "Y",
+      "serve": "Y",
+      "semantic": "Y",
+      "edwTable": "presentation.vwDimProduct",
+      "edwColumn": "ProductCategorySKey",
+      "adeTable": "product.serve.dim_product_v1",
+      "adeColumn": "category_id",
+      "semanticName": "Product Category",
+      "semanticModel": "Trade",
+      "dbEssential": "Y",
+      "pbEssential": "Y",
+      "reportCount": 450,
+      "tableCount": 2,
+      "ado_link": "https://dev.azure.com/org/project/_workitems/edit/23456"
+    }
+  ],
+  "moreResults": false
 }
-CALL {
-  WITH n, priorityLevelFilter, businessAreaFilter, effectiveStatus
-  MATCH (r:MSTRObject)-[:DEPENDS_ON]->(fp:MSTRObject)-[:DEPENDS_ON]->(n)
-  WHERE r.type IN ['Report', 'GridReport', 'Document']
-    AND r.priority_level IS NOT NULL
-    AND fp.type IN ['Filter', 'Prompt']
-    AND (priorityLevelFilter IS NULL OR r.priority_level IN priorityLevelFilter)
-    AND (businessAreaFilter IS NULL OR r.usage_area IN businessAreaFilter)
-  RETURN collect(DISTINCT r.guid) as indirectGuids
+```
+
+---
+
+## Tool 3: trace-metric
+
+**Source:** `internal/tools/mstr/trace_metric.go`
+
+### Input Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `guid` | string | Yes | Full GUID of the Metric to trace (32-char hex) |
+| `direction` | string | Yes | `"downstream"` (toward reports) or `"upstream"` (toward tables) |
+
+### LLM-Facing Description
+
+```
+Trace lineage of a Metric in a specific direction.
+
+DIRECTION:
+- 'downstream': Find reports that USE this metric (M/A → Reports)
+- 'upstream': Find source tables and dependencies (M/A → Tables)
+
+WHY SPLIT? High-connectivity metrics (e.g., 'Retail Sales Value' with 6000+ reports)
+would return too much data in a single call. Choose the direction relevant to your query.
+
+CORRECT USAGE:
+- First search: search-metrics(query="Retail Sales")
+- Then trace downstream: trace-metric(guid="2F00974D...", direction="downstream")
+- Or trace upstream: trace-metric(guid="2F00974D...", direction="upstream")
+
+RETURNS:
+- downstream: metric details + reports[] (max 50)
+- upstream: metric details + tables[] (max 50) + dependencies[] (max 50)
+```
+
+### Cypher Query (downstream)
+
+```cypher
+// Trace DOWNSTREAM lineage for a Metric (toward reports)
+// $guid: Full GUID of the Metric
+
+MATCH (n:Metric {guid: $guid})
+
+WITH n,
+     COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
+
+// Get reports using this metric (from pre-computed lineage)
+OPTIONAL MATCH (r:MSTRObject)
+WHERE r.guid IN COALESCE(n.lineage_used_by_reports, [])
+WITH n, effectiveStatus, collect(DISTINCT {
+  name: r.name,
+  guid: r.guid,
+  type: r.type,
+  priority: r.priority_level,
+  area: r.usage_area
+})[0..50] as reports
+
+RETURN {
+  metric: { ... 21 properties ... },
+  direction: 'downstream',
+  reports: reports
+} as result
+```
+
+### Cypher Query (upstream)
+
+```cypher
+// Trace UPSTREAM lineage for a Metric (toward source tables)
+// $guid: Full GUID of the Metric
+
+MATCH (n:Metric {guid: $guid})
+
+WITH n,
+     COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
+
+// Get source tables (from pre-computed lineage)
+OPTIONAL MATCH (t:MSTRObject)
+WHERE t.guid IN COALESCE(n.lineage_source_tables, [])
+WITH n, effectiveStatus, collect(DISTINCT {
+  name: t.name,
+  guid: t.guid,
+  type: t.type,
+  physicalTable: t.physical_table_name,
+  database: t.database_instance
+})[0..50] as tables
+
+// Get direct dependencies (1-hop toward sources)
+OPTIONAL MATCH (n)-[:DEPENDS_ON]->(dep:MSTRObject)
+WITH n, effectiveStatus, tables, collect(DISTINCT {
+  name: dep.name,
+  guid: dep.guid,
+  type: dep.type,
+  formula: dep.formula
+})[0..50] as dependencies
+
+RETURN {
+  metric: { ... 21 properties ... },
+  direction: 'upstream',
+  tables: tables,
+  dependencies: dependencies
+} as result
+```
+
+### Response Structure (downstream)
+
+```json
+{
+  "result": {
+    "metric": {
+      "type": "Metric",
+      "guid": "E50193A144D3BBAA4B8C938EBFBDA01A",
+      "name": "Retail Sales Value",
+      "status": "Complete",
+      "priority": 0,
+      "formula": "...",
+      "notes": "...",
+      "raw": "Y", "serve": "Y", "semantic": "Y",
+      "edwTable": "...", "edwColumn": "...",
+      "adeTable": "...", "adeColumn": "...",
+      "semanticName": "...", "semanticModel": "...",
+      "dbEssential": "Y", "pbEssential": "Y",
+      "reportCount": 888, "tableCount": 1,
+      "ado_link": "..."
+    },
+    "direction": "downstream",
+    "reports": [
+      { "name": "Daily Sales Dashboard", "guid": "ABC123...", "type": "Report", "priority": 1, "area": "Customer Commercial" }
+    ]
+  }
 }
-WITH n, effectiveStatus, directGuids + [g IN indirectGuids WHERE NOT g IN directGuids] as allReportGuids
-WHERE size(allReportGuids) > 0
-RETURN 
-      n.type as Type,
-      n.inherited_priority_level as Priority,
-      n.name as Name,
-      effectiveStatus as Status,
-      n.parity_team as Team,
-      size(allReportGuids) as Reports,
-      COALESCE(n.lineage_source_tables_count, 0) as Tables,
-      n.guid as GUID
-ORDER BY Reports DESC
+```
+
+### Response Structure (upstream)
+
+```json
+{
+  "result": {
+    "metric": { ... same 21 properties ... },
+    "direction": "upstream",
+    "tables": [
+      { "name": "FACT_SALES", "guid": "GHI789...", "type": "LogicalTable", "physicalTable": "dbo.FACT_SALES_DAILY", "database": "EDW_PROD" }
+    ],
+    "dependencies": [
+      { "name": "Sales Fact", "guid": "FACT123...", "type": "Fact", "formula": null }
+    ]
+  }
+}
 ```
 
 ---
 
-### Query 3: `ReportsUsingObjectsQuery`
+## Tool 4: trace-attribute
 
-**Tools that use it:** `get-reports-using-metric`, `get-reports-using-attribute`
+**Source:** `internal/tools/mstr/trace_attribute.go`
 
-**Parameters:**
-- `neodash_selected_guid` (array of strings): Object GUIDs
-- `neodash_priority_level` (array): Priority levels
-- `neodash_business_area` (array): Business areas
+### Input Parameters
 
-**Returns:** Selected Item, Report Name, Priority, Area, Department, Users, Usage
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `guid` | string | Yes | Full GUID of the Attribute to trace (32-char hex) |
+| `direction` | string | Yes | `"downstream"` (toward reports) or `"upstream"` (toward tables) |
+
+### LLM-Facing Description
+
+```
+Trace lineage of an Attribute in a specific direction.
+
+DIRECTION:
+- 'downstream': Find reports that USE this attribute (M/A → Reports)
+- 'upstream': Find source tables and dependencies (M/A → Tables)
+
+WHY SPLIT? High-connectivity attributes (e.g., 'Product' with thousands of reports)
+would return too much data in a single call. Choose the direction relevant to your query.
+
+CORRECT USAGE:
+- First search: search-attributes(query="Product Category")
+- Then trace downstream: trace-attribute(guid="BC105EDE...", direction="downstream")
+- Or trace upstream: trace-attribute(guid="BC105EDE...", direction="upstream")
+
+RETURNS:
+- downstream: attribute details + reports[] (max 50)
+- upstream: attribute details + tables[] (max 50) + dependencies[] (max 50)
+```
+
+### Cypher Query (downstream)
 
 ```cypher
-WITH $neodash_selected_guid as selectedGuids,
-     CASE WHEN $neodash_priority_level IS NULL OR size($neodash_priority_level) = 0 OR 'All Prioritized' IN $neodash_priority_level THEN null ELSE [p IN $neodash_priority_level | toInteger(replace(replace(replace(p, 'P', ''), ' (Highest)', ''), ' (Lowest)', ''))] END as priorityLevelFilter,
-     CASE WHEN $neodash_business_area IS NULL OR size($neodash_business_area) = 0 OR 'All Areas' IN $neodash_business_area THEN null ELSE $neodash_business_area END as businessAreaFilter
-WHERE selectedGuids IS NOT NULL AND size(selectedGuids) > 0
-MATCH (n:MSTRObject)
-WHERE n.guid IN selectedGuids AND n.lineage_used_by_reports IS NOT NULL
-WITH n, n.lineage_used_by_reports as reportGuids, priorityLevelFilter, businessAreaFilter
-UNWIND reportGuids as reportGuid
-MATCH (r:MSTRObject {guid: reportGuid})
-WHERE r.type IN ['Report', 'GridReport', 'Document']
-  AND r.priority_level IS NOT NULL
-  AND (priorityLevelFilter IS NULL OR r.priority_level IN priorityLevelFilter)
-  AND (businessAreaFilter IS NULL OR r.usage_area IN businessAreaFilter)
-RETURN DISTINCT 
-       n.name + ' (' + left(n.guid, 7) + ')' as `Selected Item`, 
-       r.name + ' (' + left(r.guid, 7) + ')'  as `Report Name`,
-       r.priority_level as `Priority`,
-       r.usage_area as `Area`,
-       r.usage_department as `Department`,
-       r.usage_users_count as `Users`,
-       r.usage_consistency + '|' + r.usage_volume as `Usage`
-ORDER BY `Selected Item`, `Report Name`
+// Trace DOWNSTREAM lineage for an Attribute (toward reports)
+// $guid: Full GUID of the Attribute
+
+MATCH (n:Attribute {guid: $guid})
+
+WITH n,
+     COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
+
+// Get reports using this attribute (from pre-computed lineage)
+OPTIONAL MATCH (r:MSTRObject)
+WHERE r.guid IN COALESCE(n.lineage_used_by_reports, [])
+WITH n, effectiveStatus, collect(DISTINCT {
+  name: r.name,
+  guid: r.guid,
+  type: r.type,
+  priority: r.priority_level,
+  area: r.usage_area
+})[0..50] as reports
+
+RETURN {
+  attribute: { ... 21 properties ... },
+  direction: 'downstream',
+  reports: reports
+} as result
 ```
 
----
-
-### Query 4: `SourceTablesQuery`
-
-**Tools that use it:** `get-metric-source-tables`, `get-attribute-source-tables`
-
-**Parameters:**
-- `neodash_selected_guid` (array of strings): Object GUIDs
-
-**Returns:** Selected Item, Table Name, Table GUID
+### Cypher Query (upstream)
 
 ```cypher
-WITH $neodash_selected_guid as selectedGuids
-WHERE selectedGuids IS NOT NULL AND size(selectedGuids) > 0
-MATCH (n:MSTRObject)
-WHERE n.guid IN selectedGuids AND n.lineage_source_tables IS NOT NULL
-WITH n, n.lineage_source_tables as tableGuids
-UNWIND tableGuids as tableGuid
-MATCH (t:MSTRObject {guid: tableGuid})
-RETURN DISTINCT 
-       n.name + ' (' + left(n.guid, 7) + ')' as `Selected Item`, 
-       t.name as `Table Name`, 
-       t.guid as `Table GUID`
-ORDER BY `Selected Item`, `Table Name`
+// Trace UPSTREAM lineage for an Attribute (toward source tables)
+// $guid: Full GUID of the Attribute
+
+MATCH (n:Attribute {guid: $guid})
+
+WITH n,
+     COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
+
+// Get source tables (from pre-computed lineage)
+OPTIONAL MATCH (t:MSTRObject)
+WHERE t.guid IN COALESCE(n.lineage_source_tables, [])
+WITH n, effectiveStatus, collect(DISTINCT {
+  name: t.name,
+  guid: t.guid,
+  type: t.type,
+  physicalTable: t.physical_table_name,
+  database: t.database_instance
+})[0..50] as tables
+
+// Get direct dependencies (1-hop toward sources)
+OPTIONAL MATCH (n)-[:DEPENDS_ON]->(dep:MSTRObject)
+WITH n, effectiveStatus, tables, collect(DISTINCT {
+  name: dep.name,
+  guid: dep.guid,
+  type: dep.type
+})[0..50] as dependencies
+
+RETURN {
+  attribute: { ... 21 properties ... },
+  direction: 'upstream',
+  tables: tables,
+  dependencies: dependencies
+} as result
+```
+
+### Response Structure (downstream)
+
+```json
+{
+  "result": {
+    "attribute": {
+      "type": "Attribute",
+      "guid": "BC105EDE477D7CEF3296FFA6E4D26797",
+      "name": "Product Category",
+      "status": "Complete",
+      "priority": 0,
+      "forms_json": "...",
+      "notes": null,
+      "raw": "Y", "serve": "Y", "semantic": "Y",
+      "edwTable": "...", "edwColumn": "...",
+      "adeTable": "...", "adeColumn": "...",
+      "semanticName": "...", "semanticModel": "...",
+      "dbEssential": "Y", "pbEssential": "Y",
+      "reportCount": 450, "tableCount": 2,
+      "ado_link": "..."
+    },
+    "direction": "downstream",
+    "reports": [
+      { "name": "Category Performance", "guid": "RPT123...", "type": "Report", "priority": 1, "area": "Fashion Product" }
+    ]
+  }
+}
+```
+
+### Response Structure (upstream)
+
+```json
+{
+  "result": {
+    "attribute": { ... same 21 properties ... },
+    "direction": "upstream",
+    "tables": [
+      { "name": "LU_PRODUCT", "guid": "MNO345...", "type": "LogicalTable", "physicalTable": "dbo.DIM_PRODUCT", "database": "EDW_PROD" }
+    ],
+    "dependencies": [
+      { "name": "product_category_id", "guid": "DEP123...", "type": "Fact" }
+    ]
+  }
+}
 ```
 
 ---
 
-### Query 5: `DownstreamDependenciesQuery`
+## Key Differences Between Tools
 
-**Tools that use it:** `get-metric-dependencies`, `get-attribute-dependencies`
+| Aspect | search-metrics | search-attributes | trace-metric | trace-attribute |
+|--------|----------------|-------------------|--------------|-----------------|
+| **Node Label** | `:Metric` | `:Attribute` | `:Metric` | `:Attribute` |
+| **Type-specific field** | `formula` | `forms_json` | `formula` | `forms_json` |
+| **Properties returned** | 21 fields | 21 fields | 21 fields + lineage | 21 fields + lineage |
+| **Dependencies include** | — | — | `formula` | (no formula) |
+| **Reports include** | — | — | `priority`, `area` | `priority`, `area` |
+| **Query mode** | GUID or name | GUID or name | Full GUID only | Full GUID only |
+| **Returns** | `results[]`, `moreResults` | `results[]`, `moreResults` | Single object with lineage | Single object with lineage |
 
-**Parameters:**
-- `neodash_selected_guid` (array of strings): Object GUIDs
+---
 
-**Returns:** Original node (n) and dependency paths (downstream)
+## Common Workflows
 
-```cypher
-WITH $neodash_selected_guid as selectedGuids
-WHERE selectedGuids IS NOT NULL AND size(selectedGuids) > 0
-MATCH (n:MSTRObject)
-WHERE n.guid IN selectedGuids
-OPTIONAL MATCH downstream = (n)-[:DEPENDS_ON*1..10]->(d:MSTRObject)
-WHERE ALL(mid IN nodes(downstream)[1..-1] WHERE mid.type IN ['Fact', 'Metric', 'Attribute', 'Column'])
-RETURN n, downstream
+### Find and Trace a Metric
+
+```
+Step 1: Search for the metric
+─────────────────────────────
+search-metrics(query="Retail Sales")
+→ Returns list of matching metrics with GUIDs
+
+Step 2: Trace the specific metric
+─────────────────────────────────
+trace-metric(guid="2F00974D44E1D0D24CA344ABD872806A")
+→ Returns reports, tables, and dependencies
+```
+
+### Find and Trace an Attribute
+
+```
+Step 1: Search for the attribute
+────────────────────────────────
+search-attributes(query="Product")
+→ Returns list of matching attributes with GUIDs
+
+Step 2: Trace the specific attribute
+────────────────────────────────────
+trace-attribute(guid="BC105EDE477D7CEF3296FFA6E4D26797")
+→ Returns reports, tables, and dependencies
+```
+
+### Browse by Status
+
+```
+# Find all "Not Planned" metrics
+search-metrics(query="*", status=["Not Planned"])
+
+# Paginate through results
+search-metrics(query="*", status=["Not Planned"], offset=100)
 ```
 
 ---
 
-### Query 6: `UpstreamDependenciesQuery`
+## Graph Traversal Rules
 
-**Tools that use it:** `get-metric-dependents`, `get-attribute-dependents`
+**Reference:** [90-symmetric-bfs-traversal.md](./flowdash-queries/90-symmetric-bfs-traversal.md)
 
-**Parameters:**
-- `neodash_selected_guid` (array of strings): Object GUIDs
+The trace tools use pre-computed lineage arrays that were built following these traversal rules.
 
-**Returns:** Original node (n) and upstream paths (upstream) - limited to 1000 paths
+### Core Concept: Capture vs Traverse
 
-```cypher
-WITH $neodash_selected_guid as selectedGuids
-WHERE selectedGuids IS NOT NULL AND size(selectedGuids) > 0
-MATCH (n:MSTRObject)
-WHERE n.guid IN selectedGuids
-OPTIONAL MATCH upstream = (r:MSTRObject)-[:DEPENDS_ON*1..10]->(n)
-WHERE r.type IN ['Report', 'GridReport', 'Document']
-WITH n, collect(upstream)[0..1000] as paths
-UNWIND paths as upstream
-RETURN n, upstream
-```
+| Behavior | Types | What Happens |
+|----------|-------|--------------|
+| **TRAVERSE** | `Prompt`, `Filter` | BFS follows their edges to find more objects |
+| **CAPTURE** | `Metric`, `Attribute`, `DerivedMetric`, `Transformation` | Added to results, but BFS stops here |
 
----
+### Traversal Directions
 
-## User Questions Mapping
+| Direction | Purpose | Intermediate Types | Target Types |
+|-----------|---------|-------------------|--------------|
+| **Inbound** (Reports → M/A) | Find reports using an object | `[Prompt, Filter]` | `[Report, GridReport, Document]` |
+| **Outbound** (M/A → Tables) | Find source tables | `[Fact, Metric, Attribute]` | `[LogicalTable, Table]` |
 
-### Questions ALREADY ANSWERED by Existing Tools
+### Pre-computed Lineage
 
-| User Question | Recommended Tool |
-|---------------|------------------|
-| "What are the details of metric X?" | `get-metric-by-guid` |
-| "What is the parity status of attribute Y?" | `get-attribute-by-guid` |
-| "Which metrics are related to 'revenue'?" | `search-metrics` |
-| "Find attributes with status 'Not Started'" | `search-attributes` |
-| "Which reports use metric Z?" | `get-reports-using-metric` |
-| "Which reports use attribute W?" | `get-reports-using-attribute` |
-| "Which tables does metric X feed from?" | `get-metric-source-tables` |
-| "What are the source tables for attribute Y?" | `get-attribute-source-tables` |
-| "What does metric X depend on?" | `get-metric-dependencies` |
-| "What is the calculation chain for attribute Y?" | `get-attribute-dependencies` |
-| "What will be affected if I change metric X?" | `get-metric-dependents` |
-| "Which objects depend on attribute Y?" | `get-attribute-dependents` |
-| "Which P1 metrics exist in the Finance area?" | `search-metrics` (with filters) |
-| "List attributes from the 'Sales' domain with status 'In Progress'" | `search-attributes` (with filters) |
+The trace tools use pre-computed arrays for performance:
+- `lineage_used_by_reports` — Array of report GUIDs that use this M/A
+- `lineage_source_tables` — Array of table GUIDs this M/A depends on
 
----
-
-## Questions Not Yet Answered
-
-### High Priority (Frequently Requested)
-
-| Question | Implementation Suggestion |
-|----------|---------------------------|
-| "What is the complete formula/definition of metric X?" | New query returning `formula`, `expressions_json`, `raw_json` |
-| "Which metrics use attribute Y in their formula?" | Specific reverse dependency traversal |
-| "What is the Power BI equivalent mapping for metric X?" | Enrich `GetObjectDetailsQuery` with more PB fields |
-| "Show the complete dependency graph for metric X" | Graph visualisation with configurable depth |
-| "Which Facts are used by metric X?" | Specific traversal for Facts |
-| "Compare two metrics (X and Y) - differences" | New comparison tool |
-
-### Medium Priority
-
-| Question | Implementation Suggestion |
-|----------|---------------------------|
-| "Which metrics are not mapped to Power BI?" | Query with filter `pb_semantic IS NULL` |
-| "List all metrics for a specific Team" | Add Team filter to `search-metrics` |
-| "Which reports are most critical (most users)?" | New query ordering by `usage_users_count` |
-| "Which EDW tables are most used?" | Aggregation by EDW table |
-| "Show orphan metrics (without dependents)" | Query identifying objects without upstream |
-| "What is the migration coverage by area?" | Status aggregation by `usage_area` |
-
-### Low Priority (Nice to Have)
-
-| Question | Implementation Suggestion |
-|----------|---------------------------|
-| "Change history of a metric's status" | Requires audit fields in the graph |
-| "Which metrics were updated this week?" | Requires timestamp fields |
-| "Suggest migration order based on dependencies" | Topological algorithm over the graph |
+**Why Pre-computed:** Runtime BFS traversal was timing out (>30 seconds) for high-connectivity objects (e.g., "Retail Sales Value" with 6,000+ reports). Pre-computed arrays reduce query time to <100ms.
 
 ---
 
 ## Database Schema
 
-### Common Node Labels
+### Node Labels
 
 | Label | Description |
 |-------|-------------|
+| `Metric` | Metrics |
+| `Attribute` | Attributes |
 | `MSTRObject` | Generic label for all MicroStrategy objects |
-| `Metric` | Metrics (also has MSTRObject label) |
-| `Attribute` | Attributes (also has MSTRObject label) |
 | `Fact` | Facts |
 | `LogicalTable` | Logical tables |
-| `Report` | Reports (type in MSTRObject) |
-| `GridReport` | Grid Reports (type in MSTRObject) |
-| `Document` | Documents (type in MSTRObject) |
-| `Filter` | Filters (type in MSTRObject) |
-| `Prompt` | Prompts (type in MSTRObject) |
-| `Column` | Columns |
-| `DataProduct` | Data domains/products |
+| `Report` | Reports |
+| `GridReport` | Grid Reports |
+| `Document` | Documents |
 
-### Relationships
+### Key Properties
 
-| Relationship | Description |
-|--------------|-------------|
-| `DEPENDS_ON` | Dependency relationship (A)-[:DEPENDS_ON]->(B) means A depends on B |
-| `BELONGS_TO` | Belonging to domain/data product |
+#### On Metric
 
-### Important Properties
+| Property | Description |
+|----------|-------------|
+| `guid` | Unique identifier |
+| `name` | Object name |
+| `formula` | Metric formula (text) |
+| `parity_status` | Original parity status |
+| `updated_parity_status` | Updated parity status (takes precedence) |
+| `ado_link` | ADO work item URL |
+| `lineage_used_by_reports` | Pre-computed report GUIDs array |
+| `lineage_source_tables` | Pre-computed table GUIDs array |
 
-#### In MSTRObject/Metric/Attribute:
-```
-guid                      - Unique identifier
-name                      - Object name
-type                      - Type ('Metric', 'Attribute', 'Report', etc.)
-parity_status            - Original parity status
-updated_parity_status    - Updated parity status (takes precedence)
-parity_group             - Parity group
-parity_subgroup          - Parity subgroup
-parity_team              - Responsible team
-parity_notes             - Parity notes
-inherited_priority_level - Inherited priority level
+#### On Attribute
 
--- Data mappings --
-db_raw                   - Databricks RAW
-db_serve                 - Databricks SERVE
-pb_semantic              - Power BI Semantic
-edw_table                - EDW Table
-edw_column               - EDW Column
-ade_db_table             - ADE Table
-ade_db_column            - ADE Column
-pb_semantic_name         - Name in PB semantic model
-pb_semantic_model        - PB semantic model
-db_essential             - Databricks Essential
-pb_essential             - Power BI Essential
+| Property | Description |
+|----------|-------------|
+| `guid` | Unique identifier |
+| `name` | Object name |
+| `forms_json` | Attribute forms in JSON |
+| `parity_status` | Original parity status |
+| `updated_parity_status` | Updated parity status (takes precedence) |
+| `ado_link` | ADO work item URL |
+| `lineage_used_by_reports` | Pre-computed report GUIDs array |
+| `lineage_source_tables` | Pre-computed table GUIDs array |
 
--- Lineage (arrays of GUIDs) --
-lineage_source_tables       - Source table GUIDs
-lineage_source_tables_count - Source table count
-lineage_used_by_reports     - GUIDs of reports that use the object
-```
+#### On LogicalTable/Table
 
-#### In Metric:
-```
-formula          - Metric formula (text)
-expressions_json - Expressions in JSON
-raw_json         - Complete original JSON
-location         - Location in the project
-```
-
-#### In Attribute:
-```
-forms_json       - Attribute forms in JSON
-location         - Location in the project
-```
-
-#### In Report/GridReport/Document:
-```
-priority_level      - Priority level (1, 2, 3, etc.)
-usage_area          - Usage/business area
-usage_department    - Department
-usage_users_count   - User count
-usage_consistency   - Usage consistency
-usage_volume        - Usage volume
-```
-
-#### In LogicalTable:
-```
-physical_table_name - Physical table name
-database_instance   - Database instance
-```
+| Property | Description |
+|----------|-------------|
+| `guid` | Unique identifier |
+| `name` | Logical table name |
+| `physical_table_name` | Physical table name in DB |
+| `database_instance` | Database instance |
 
 ---
 
-## Optimisation Considerations
+## Migration from Previous Tools
 
-### Current Performance
+| Old Tool | New Tool |
+|----------|----------|
+| `get-metric-by-guid` | `search-metrics` (use GUID as query) |
+| `get-attribute-by-guid` | `search-attributes` (use GUID as query) |
+| `get-reports-using-metric` | `trace-metric` (returns reports in response) |
+| `get-reports-using-attribute` | `trace-attribute` (returns reports in response) |
+| `get-metric-source-tables` | `trace-metric` (returns tables in response) |
+| `get-attribute-source-tables` | `trace-attribute` (returns tables in response) |
+| `get-metric-dependencies` | `trace-metric` (returns dependencies in response) |
+| `get-attribute-dependencies` | `trace-attribute` (returns dependencies in response) |
 
-1. **`SearchObjectsQuery`** - Most complex query
-   - Uses CALL subqueries for aggregation
-   - Multiple optional filters with CASE WHEN
-   - EXISTS subqueries for relationship filters
-   - **Potential optimisation:** Indices on `type`, `guid`, `priority_level`, `usage_area`
+**Removed tools:** `get-metrics-stats`, `get-attributes-stats`, `get-object-stats`, `get-metric-dependents`, `get-attribute-dependents`
 
-2. **`DownstreamDependenciesQuery` / `UpstreamDependenciesQuery`**
-   - Variable traversal of 1..10 levels
-   - ALL() predicate on intermediate nodes
-   - **Potential optimisation:** Limit depth, use apoc.path if available
+### Removed Fields
 
-3. **`ReportsUsingObjectsQuery` / `SourceTablesQuery`**
-   - Depend on pre-computed arrays (`lineage_used_by_reports`, `lineage_source_tables`)
-   - **Advantage:** Pre-computed arrays speed up lookups
-   - **Disadvantage:** Requires maintaining array integrity
-
-### Recommended Indices
-
-```cypher
--- Existing indices (verify):
-CREATE INDEX IF NOT EXISTS FOR (n:MSTRObject) ON (n.guid);
-CREATE INDEX IF NOT EXISTS FOR (n:MSTRObject) ON (n.type);
-CREATE INDEX IF NOT EXISTS FOR (n:MSTRObject) ON (n.priority_level);
-CREATE INDEX IF NOT EXISTS FOR (n:MSTRObject) ON (n.usage_area);
-CREATE INDEX IF NOT EXISTS FOR (n:Metric) ON (n.guid);
-CREATE INDEX IF NOT EXISTS FOR (n:Attribute) ON (n.guid);
-CREATE INDEX IF NOT EXISTS FOR (n:DataProduct) ON (n.name);
-
--- Composite index for search:
-CREATE INDEX IF NOT EXISTS FOR (n:MSTRObject) ON (n.type, n.guid);
-```
-
-### Parameter Usage Patterns
-
-All queries use parameters with `neodash_` prefix (NeoDash compatibility):
-- `neodash_selected_guid` - Array of selected GUIDs
-- `neodash_searchterm` - Search term
-- `neodash_objecttype` - Object type
-- `neodash_priority_level` - Array of priority levels
-- `neodash_business_area` - Array of business areas
-- `neodash_status` - Array of statuses
-- `neodash_data_domain` - Array of domains
-
----
-
-## Guidelines for New Queries
-
-### Structure Pattern
-
-```cypher
--- 1. Parameter processing with CASE WHEN
-WITH CASE WHEN $param IS NULL THEN default ELSE processed_value END as paramName
-
--- 2. Initial MATCH with basic filters
-MATCH (n:Label)
-WHERE n.property = value
-
--- 3. Conditional filters
-WHERE (filterVar IS NULL OR n.property IN filterVar)
-
--- 4. Aggregations in CALL subqueries
-CALL {
-  WITH n
-  MATCH pattern
-  RETURN aggregated_result
-}
-
--- 5. RETURN with standardised fields
-RETURN 
-  n.type as Type,
-  n.name as Name,
-  n.guid as GUID
-ORDER BY relevantField DESC
-```
-
-### Checklist for New Queries
-
-- [ ] Use parameters with `neodash_` prefix for compatibility
-- [ ] Handle NULL/empty for all optional parameters
-- [ ] Use `effectiveStatus` pattern for parity status
-- [ ] Limit traversal results (e.g., `[0..1000]`)
-- [ ] Include GUID in results to allow drill-down
-- [ ] Order results meaningfully
-- [ ] Test with real GUIDs before implementing
-
-### Template for New Tool
-
-1. Create file in `internal/tools/mstr/tool_name.go`
-2. Add query in `internal/tools/mstr/queries.go`
-3. Register in `internal/server/tools_register.go`
-4. Add to `manifest.json`
-
----
-
-## Reference Files
-
-| File | Description |
-|------|-------------|
-| `internal/tools/mstr/queries.go` | All Cypher queries |
-| `internal/tools/mstr/*.go` | Tool implementations |
-| `internal/server/tools_register.go` | Tool registration in the server |
-| `manifest.json` | MCP manifest with tool list |
-| `queries/01.cypher` | Original NeoDash queries |
-| `queries/neo4j-query-templates.md` | Additional query templates |
+The following fields have been removed from responses:
+- `parity_group` / `Group`
+- `parity_subgroup` / `SubGroup`
+- `lineage_used_by_reports_count` / `reportCount`
+- `lineage_source_tables_count` / `tableCount`
+- `team` (NeoDash-specific)
+- `priority` / `inherited_priority_level` (NeoDash-specific)
 
 ---
 
@@ -562,5 +807,5 @@ ORDER BY relevantField DESC
 
 | Date | Version | Change |
 |------|---------|--------|
+| 2026-02-03 | 2.0.0 | Major refactor: Consolidated 15 tools into 4 unified tools; Added full Cypher queries and implementation details |
 | 2026-01-30 | 1.0.0 | Initial document with 12 MSTR tools |
-| 2026-01-24 | - | Lineage arrays now contain pure GUIDs (unformatted) |

@@ -159,14 +159,22 @@ To configure MCP clients (VSCode, Claude Desktop, etc.) to use the Flow Microstr
 
 ## Tools & Usage
 
-Provided tools:
+### MicroStrategy Migration Tools
 
-| Tool                  | ReadOnly | Purpose                                              | Notes                                                                                                                        |
-| --------------------- | -------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `get-schema`          | `true`   | Introspect labels, relationship types, property keys | Provide valuable context to the client LLMs.                                                                                 |
-| `read-cypher`         | `true`   | Execute arbitrary Cypher (read mode)                 | Rejects writes, schema/admin operations, and PROFILE queries. Use `write-cypher` instead.                                    |
-| `write-cypher`        | `false`  | Execute arbitrary Cypher (write mode)                | **Caution:** LLM-generated queries could cause harm. Use only in development environments. Disabled if `FLOW_READ_ONLY=true`. |
-| `list-gds-procedures` | `true`   | List GDS procedures available in the Neo4j instance  | Help the client LLM to have a better visibility on the GDS procedures available                                              |
+These tools enable LLM agents to search for MicroStrategy objects and trace their lineage:
+
+| Tool                | ReadOnly | Purpose                                           | Notes                                                                 |
+| ------------------- | -------- | ------------------------------------------------- | --------------------------------------------------------------------- |
+| `search-metrics`    | `true`   | Find Metrics by GUID or name                      | Accepts full GUIDs, partial GUIDs (8+ chars), or name search terms    |
+| `search-attributes` | `true`   | Find Attributes by GUID or name                   | Accepts full GUIDs, partial GUIDs (8+ chars), or name search terms    |
+| `trace-metric`      | `true`   | Trace Metric lineage (reports, tables, deps)      | Returns reports using it, source tables, and direct dependencies      |
+| `trace-attribute`   | `true`   | Trace Attribute lineage (reports, tables, deps)   | Returns reports using it, source tables, and direct dependencies      |
+
+### Optional Tools
+
+| Tool                  | ReadOnly | Purpose                                              | Notes                                                                 |
+| --------------------- | -------- | ---------------------------------------------------- | --------------------------------------------------------------------- |
+| `list-gds-procedures` | `true`   | List GDS procedures available in the Neo4j instance  | Only available if GDS library is installed                            |
 
 ### Readonly mode flag
 

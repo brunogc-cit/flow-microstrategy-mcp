@@ -163,27 +163,7 @@ func (s *Neo4jMCPServer) getAllToolsDefs(deps *tools.ToolDependencies) []ToolDef
 		},
 
 		// =============================================================================
-		// MicroStrategy Migration Tools - Details by GUID
-		// =============================================================================
-		{
-			category: mstrCategory,
-			definition: server.ServerTool{
-				Tool:    mstr.GetMetricByGUIDSpec(),
-				Handler: mstr.GetMetricByGUIDHandler(deps),
-			},
-			readonly: true,
-		},
-		{
-			category: mstrCategory,
-			definition: server.ServerTool{
-				Tool:    mstr.GetAttributeByGUIDSpec(),
-				Handler: mstr.GetAttributeByGUIDHandler(deps),
-			},
-			readonly: true,
-		},
-
-		// =============================================================================
-		// MicroStrategy Migration Tools - Search
+		// MicroStrategy Migration Tools - Search (unified GUID/name lookup)
 		// =============================================================================
 		{
 			category: mstrCategory,
@@ -203,109 +183,21 @@ func (s *Neo4jMCPServer) getAllToolsDefs(deps *tools.ToolDependencies) []ToolDef
 		},
 
 		// =============================================================================
-		// MicroStrategy Migration Tools - Reports Using Objects
+		// MicroStrategy Migration Tools - Trace (combined lineage)
 		// =============================================================================
 		{
 			category: mstrCategory,
 			definition: server.ServerTool{
-				Tool:    mstr.GetReportsUsingMetricSpec(),
-				Handler: mstr.GetReportsUsingMetricHandler(deps),
+				Tool:    mstr.TraceMetricSpec(),
+				Handler: mstr.TraceMetricHandler(deps),
 			},
 			readonly: true,
 		},
 		{
 			category: mstrCategory,
 			definition: server.ServerTool{
-				Tool:    mstr.GetReportsUsingAttributeSpec(),
-				Handler: mstr.GetReportsUsingAttributeHandler(deps),
-			},
-			readonly: true,
-		},
-
-		// =============================================================================
-		// MicroStrategy Migration Tools - Source Tables
-		// =============================================================================
-		{
-			category: mstrCategory,
-			definition: server.ServerTool{
-				Tool:    mstr.GetMetricSourceTablesSpec(),
-				Handler: mstr.GetMetricSourceTablesHandler(deps),
-			},
-			readonly: true,
-		},
-		{
-			category: mstrCategory,
-			definition: server.ServerTool{
-				Tool:    mstr.GetAttributeSourceTablesSpec(),
-				Handler: mstr.GetAttributeSourceTablesHandler(deps),
-			},
-			readonly: true,
-		},
-
-		// =============================================================================
-		// MicroStrategy Migration Tools - Dependencies (Downstream)
-		// =============================================================================
-		{
-			category: mstrCategory,
-			definition: server.ServerTool{
-				Tool:    mstr.GetMetricDependenciesSpec(),
-				Handler: mstr.GetMetricDependenciesHandler(deps),
-			},
-			readonly: true,
-		},
-		{
-			category: mstrCategory,
-			definition: server.ServerTool{
-				Tool:    mstr.GetAttributeDependenciesSpec(),
-				Handler: mstr.GetAttributeDependenciesHandler(deps),
-			},
-			readonly: true,
-		},
-
-		// =============================================================================
-		// MicroStrategy Migration Tools - Dependents (Upstream)
-		// =============================================================================
-		{
-			category: mstrCategory,
-			definition: server.ServerTool{
-				Tool:    mstr.GetMetricDependentsSpec(),
-				Handler: mstr.GetMetricDependentsHandler(deps),
-			},
-			readonly: true,
-		},
-		{
-			category: mstrCategory,
-			definition: server.ServerTool{
-				Tool:    mstr.GetAttributeDependentsSpec(),
-				Handler: mstr.GetAttributeDependentsHandler(deps),
-			},
-			readonly: true,
-		},
-
-		// =============================================================================
-		// MicroStrategy Migration Tools - Statistics
-		// =============================================================================
-		{
-			category: mstrCategory,
-			definition: server.ServerTool{
-				Tool:    mstr.GetMetricsStatsSpec(),
-				Handler: mstr.GetMetricsStatsHandler(deps),
-			},
-			readonly: true,
-		},
-		{
-			category: mstrCategory,
-			definition: server.ServerTool{
-				Tool:    mstr.GetAttributesStatsSpec(),
-				Handler: mstr.GetAttributesStatsHandler(deps),
-			},
-			readonly: true,
-		},
-		{
-			category: mstrCategory,
-			definition: server.ServerTool{
-				Tool:    mstr.GetObjectStatsSpec(),
-				Handler: mstr.GetObjectStatsHandler(deps),
+				Tool:    mstr.TraceAttributeSpec(),
+				Handler: mstr.TraceAttributeHandler(deps),
 			},
 			readonly: true,
 		},

@@ -1,0 +1,3 @@
+kind: Major
+body: "BREAKING: Consolidate 15 MicroStrategy tools into 4 unified tools (search-metrics, search-attributes, trace-metric, trace-attribute). Search tools now support unified GUID/name lookup. Trace tools combine reports, tables, and dependencies into single response. Removed: get-metric-by-guid, get-attribute-by-guid, get-reports-using-*, get-*-source-tables, get-*-dependencies, get-*-dependents, get-*-stats."
+time: 2026-02-03T12:00:00.000000000Z
