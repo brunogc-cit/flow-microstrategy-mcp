@@ -13,16 +13,18 @@ import (
 type TraceAttributeInput struct {
 	GUID      string `json:"guid" jsonschema:"required,description=Full GUID of the Attribute to trace"`
 	Direction string `json:"direction" jsonschema:"required,enum=downstream,enum=upstream,description=Trace direction: 'downstream' (toward reports - who uses this?) or 'upstream' (toward tables - where does data come from?)"`
+	Offset    int    `json:"offset,omitempty" jsonschema:"default=0,description=Skip first N results for pagination"`
 }
 
 // traceAttributeDownstreamQuery traces downstream lineage (toward reports - who uses this attribute?)
+// Uses LIVE graph traversal - finds objects that depend on this attribute via DEPENDS_ON relationships
 const traceAttributeDownstreamQuery = `
 // Trace DOWNSTREAM lineage for an Attribute (toward reports)
 // $guid: Full GUID of the Attribute
+// $offset: Pagination offset
 //
-// Design Decision: Split upstream/downstream to avoid returning too many objects.
-// Downstream = follow reverse dependencies toward consumers (Reports).
-// Uses pre-computed lineage_used_by_reports for performance.
+// LIVE TRAVERSAL: Follows incoming DEPENDS_ON relationships to find consumers.
+// Traverses up to 10 hops to find Reports/GridReports/Documents that use this attribute.
 
 MATCH (n:Attribute {guid: $guid})
 
@@ -30,16 +32,26 @@ MATCH (n:Attribute {guid: $guid})
 WITH n,
      COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
 
-// Get reports using this attribute (from pre-computed lineage)
-OPTIONAL MATCH (r:MSTRObject)
-WHERE r.guid IN COALESCE(n.lineage_used_by_reports, [])
-WITH n, effectiveStatus, collect(DISTINCT {
-  name: r.name,
-  guid: r.guid,
-  type: r.type,
-  priority: r.priority_level,
-  area: r.usage_area
-})[0..50] as reports
+// Find prioritized reports that depend on this attribute (live traversal)
+// Reports connect to attributes through various paths (direct, via Prompts, Filters, Metrics, etc.)
+// Filter: Only prioritized reports (priority_level IS NOT NULL) - aligns with dashboard
+OPTIONAL MATCH (report)-[:DEPENDS_ON*1..10]->(n)
+WHERE report.type IN ['Report', 'GridReport', 'Document']
+  AND report.priority_level IS NOT NULL
+
+WITH n, effectiveStatus, report
+ORDER BY report.name ASC
+SKIP $offset
+LIMIT 101
+
+// Collect paginated reports (filter out null results from OPTIONAL MATCH)
+WITH n, effectiveStatus, [r IN collect(DISTINCT {
+  name: report.name,
+  guid: report.guid,
+  type: report.type,
+  priority: report.priority_level,
+  area: report.usage_area
+}) WHERE r.guid IS NOT NULL] as fetched
 
 // Return attribute with all properties (updated_ values take precedence)
 RETURN {
@@ -62,23 +74,23 @@ RETURN {
     semanticModel: n.pb_semantic_model,
     dbEssential: n.db_essential,
     pbEssential: n.pb_essential,
-    reportCount: COALESCE(n.lineage_used_by_reports_count, 0),
-    tableCount: COALESCE(n.lineage_source_tables_count, 0),
     ado_link: COALESCE(n.updated_ado_link, n.ado_link)
   },
   direction: 'downstream',
-  reports: reports
+  reports: fetched[0..100],
+  moreResults: size(fetched) > 100
 } as result
 `
 
 // traceAttributeUpstreamQuery traces upstream lineage (toward tables - where does data come from?)
+// Uses LIVE graph traversal - follows DEPENDS_ON relationships toward data sources
 const traceAttributeUpstreamQuery = `
 // Trace UPSTREAM lineage for an Attribute (toward source tables)
 // $guid: Full GUID of the Attribute
+// $offset: Pagination offset
 //
-// Design Decision: Split upstream/downstream to avoid returning too many objects.
-// Upstream = follow dependencies toward data sources (Tables).
-// Uses pre-computed lineage_source_tables for performance.
+// LIVE TRAVERSAL: Follows outgoing DEPENDS_ON relationships to find data sources.
+// Tables are reached via direct relationships or through intermediate objects.
 
 MATCH (n:Attribute {guid: $guid})
 
@@ -86,24 +98,33 @@ MATCH (n:Attribute {guid: $guid})
 WITH n,
      COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
 
-// Get source tables (from pre-computed lineage)
-OPTIONAL MATCH (t:MSTRObject)
-WHERE t.guid IN COALESCE(n.lineage_source_tables, [])
-WITH n, effectiveStatus, collect(DISTINCT {
+// Find source tables via live traversal (Attribute -> ... -> LogicalTable)
+OPTIONAL MATCH (n)-[:DEPENDS_ON*1..10]->(t)
+WHERE t.type IN ['LogicalTable', 'Table']
+
+WITH n, effectiveStatus, t
+ORDER BY t.name ASC
+SKIP $offset
+LIMIT 101
+
+// Collect paginated tables (filter out null results from OPTIONAL MATCH)
+WITH n, effectiveStatus, [tbl IN collect(DISTINCT {
   name: t.name,
   guid: t.guid,
   type: t.type,
   physicalTable: t.physical_table_name,
   database: t.database_instance
-})[0..50] as tables
+}) WHERE tbl.guid IS NOT NULL] as fetchedTables
 
-// Get direct dependencies (1-hop toward sources)
-OPTIONAL MATCH (n)-[:DEPENDS_ON]->(dep:MSTRObject)
-WITH n, effectiveStatus, tables, collect(DISTINCT {
+// Get direct dependencies (depth 1-2 for immediate dependencies)
+OPTIONAL MATCH (n)-[:DEPENDS_ON*1..2]->(dep)
+WHERE dep.type IN ['Fact', 'Column', 'Attribute', 'Transformation']
+
+WITH n, effectiveStatus, fetchedTables, collect(DISTINCT {
   name: dep.name,
   guid: dep.guid,
   type: dep.type
-})[0..50] as dependencies
+})[0..100] as dependencies
 
 // Return attribute with all properties (updated_ values take precedence)
 RETURN {
@@ -126,12 +147,11 @@ RETURN {
     semanticModel: n.pb_semantic_model,
     dbEssential: n.db_essential,
     pbEssential: n.pb_essential,
-    reportCount: COALESCE(n.lineage_used_by_reports_count, 0),
-    tableCount: COALESCE(n.lineage_source_tables_count, 0),
     ado_link: COALESCE(n.updated_ado_link, n.ado_link)
   },
   direction: 'upstream',
-  tables: tables,
+  tables: fetchedTables[0..100],
+  moreResults: size(fetchedTables) > 100,
   dependencies: dependencies
 } as result
 `
@@ -140,19 +160,16 @@ RETURN {
 func TraceAttributeSpec() mcp.Tool {
 	return mcp.NewTool("trace-attribute",
 		mcp.WithDescription(
-			"Trace lineage of an Attribute in a specific direction.\n\n"+
+			"Trace lineage of an Attribute in a specific direction using live graph traversal.\n\n"+
 				"DIRECTION:\n"+
-				"- 'downstream': Find reports that USE this attribute (M/A → Reports)\n"+
-				"- 'upstream': Find source tables and dependencies (M/A → Tables)\n\n"+
-				"WHY SPLIT? High-connectivity attributes (e.g., 'Product' with thousands of reports) "+
-				"would return too much data in a single call. Choose the direction relevant to your query.\n\n"+
+				"- 'downstream': Find PRIORITIZED reports that USE this attribute (live BFS traversal)\n"+
+				"- 'upstream': Find source tables and dependencies (live BFS traversal)\n\n"+
+				"NOTE: Downstream only returns reports with priority_level (prioritized reports).\n\n"+
 				"CORRECT USAGE:\n"+
 				"- First search: search-attributes(query=\"Product Category\")\n"+
 				"- Then trace downstream: trace-attribute(guid=\"BC105EDE...\", direction=\"downstream\")\n"+
 				"- Or trace upstream: trace-attribute(guid=\"BC105EDE...\", direction=\"upstream\")\n\n"+
-				"RETURNS:\n"+
-				"- downstream: attribute details + reports[] (max 50)\n"+
-				"- upstream: attribute details + tables[] (max 50) + dependencies[] (max 50)",
+				"PAGINATION: Returns 100 results. If moreResults=true, call again with offset+100.",
 		),
 		mcp.WithInputSchema[TraceAttributeInput](),
 		mcp.WithTitleAnnotation("Trace Attribute lineage by direction"),
@@ -204,10 +221,11 @@ func handleTraceAttribute(ctx context.Context, deps *tools.ToolDependencies, req
 	}
 
 	params := map[string]any{
-		"guid": input.GUID,
+		"guid":   input.GUID,
+		"offset": input.Offset,
 	}
 
-	slog.Info("executing trace-attribute query", "guid", input.GUID, "direction", input.Direction)
+	slog.Info("executing trace-attribute query", "guid", input.GUID, "direction", input.Direction, "offset", input.Offset)
 
 	records, err := deps.DBService.ExecuteReadQuery(ctx, query, params)
 	if err != nil {

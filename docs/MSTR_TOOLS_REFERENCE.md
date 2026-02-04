@@ -17,6 +17,7 @@ For the specification document, see [103-mcp-tools-reference.md](./flowdash-quer
 9. [Graph Traversal Rules](#graph-traversal-rules)
 10. [Database Schema](#database-schema)
 11. [Migration from Previous Tools](#migration-from-previous-tools)
+12. [Stress Testing](#stress-testing)
 
 ---
 
@@ -149,8 +150,13 @@ PAGINATION: Returns 100 results. If moreResults=true, call again with offset+100
 ```cypher
 // Search for Metrics by GUID or name
 // $query: GUID (full/partial) or name search term
-// $status: optional parity status filter
+// $status: optional parity status filter (applies to effective status)
 // $offset: pagination offset (0, 100, 200, ...)
+//
+// Design Decision: Returns ALL Metrics matching the query, including those without
+// parity mapping. Objects not in the parity matrix get status "No Status".
+// The updated_parity_status property (from ADO backlog sync) takes precedence
+// over the computed parity_status.
 
 // Determine if query looks like a GUID (hex chars, 8+ length)
 WITH $query as query,
@@ -167,7 +173,7 @@ WHERE n.guid IS NOT NULL
   )
   AND ($status IS NULL OR COALESCE(n.updated_parity_status, n.parity_status) IN $status)
 
-// Compute effective status (updated takes precedence)
+// Compute effective values (updated_ properties take precedence)
 WITH n,
      COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
 
@@ -175,14 +181,29 @@ ORDER BY n.name ASC
 SKIP $offset
 LIMIT 101  // Fetch 101 to determine if more results exist
 
-// Collect results
+// Collect results with all properties (updated_ values take precedence)
 WITH collect({
   type: 'Metric',
   guid: n.guid,
   name: n.name,
   status: effectiveStatus,
+  priority: n.inherited_priority_level,
   formula: n.formula,
-  ado_link: n.ado_link
+  notes: COALESCE(n.updated_parity_notes, n.parity_notes),
+  raw: COALESCE(n.updated_db_raw, n.db_raw),
+  serve: COALESCE(n.updated_db_serve, n.db_serve),
+  semantic: n.pb_semantic,
+  edwTable: COALESCE(n.updated_edw_table, n.edw_table),
+  edwColumn: n.edw_column,
+  adeTable: COALESCE(n.updated_ade_db_table, n.ade_db_table),
+  adeColumn: n.ade_db_column,
+  semanticName: n.pb_semantic_name,
+  semanticModel: n.pb_semantic_model,
+  dbEssential: n.db_essential,
+  pbEssential: n.pb_essential,
+  reportCount: COALESCE(n.lineage_used_by_reports_count, 0),
+  tableCount: COALESCE(n.lineage_source_tables_count, 0),
+  ado_link: COALESCE(n.updated_ado_link, n.ado_link)
 }) as fetched
 
 // Return first 100; moreResults=true if 101st exists
@@ -262,8 +283,13 @@ PAGINATION: Returns 100 results. If moreResults=true, call again with offset+100
 ```cypher
 // Search for Attributes by GUID or name
 // $query: GUID (full/partial) or name search term
-// $status: optional parity status filter
+// $status: optional parity status filter (applies to effective status)
 // $offset: pagination offset (0, 100, 200, ...)
+//
+// Design Decision: Returns ALL Attributes matching the query, including those without
+// parity mapping. Objects not in the parity matrix get status "No Status".
+// The updated_parity_status property (from ADO backlog sync) takes precedence
+// over the computed parity_status.
 
 // Determine if query looks like a GUID (hex chars, 8+ length)
 WITH $query as query,
@@ -280,7 +306,7 @@ WHERE n.guid IS NOT NULL
   )
   AND ($status IS NULL OR COALESCE(n.updated_parity_status, n.parity_status) IN $status)
 
-// Compute effective status (updated takes precedence)
+// Compute effective values (updated_ properties take precedence)
 WITH n,
      COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
 
@@ -288,14 +314,29 @@ ORDER BY n.name ASC
 SKIP $offset
 LIMIT 101  // Fetch 101 to determine if more results exist
 
-// Collect results
+// Collect results with all properties (updated_ values take precedence)
 WITH collect({
   type: 'Attribute',
   guid: n.guid,
   name: n.name,
   status: effectiveStatus,
+  priority: n.inherited_priority_level,
   forms_json: n.forms_json,
-  ado_link: n.ado_link
+  notes: COALESCE(n.updated_parity_notes, n.parity_notes),
+  raw: COALESCE(n.updated_db_raw, n.db_raw),
+  serve: COALESCE(n.updated_db_serve, n.db_serve),
+  semantic: n.pb_semantic,
+  edwTable: COALESCE(n.updated_edw_table, n.edw_table),
+  edwColumn: n.edw_column,
+  adeTable: COALESCE(n.updated_ade_db_table, n.ade_db_table),
+  adeColumn: n.ade_db_column,
+  semanticName: n.pb_semantic_name,
+  semanticModel: n.pb_semantic_model,
+  dbEssential: n.db_essential,
+  pbEssential: n.pb_essential,
+  reportCount: COALESCE(n.lineage_used_by_reports_count, 0),
+  tableCount: COALESCE(n.lineage_source_tables_count, 0),
+  ado_link: COALESCE(n.updated_ado_link, n.ado_link)
 }) as fetched
 
 // Return first 100; moreResults=true if 101st exists
@@ -345,31 +386,30 @@ RETURN
 
 ### Input Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `guid` | string | Yes | Full GUID of the Metric to trace (32-char hex) |
-| `direction` | string | Yes | `"downstream"` (toward reports) or `"upstream"` (toward tables) |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `guid` | string | Yes | — | Full GUID of the Metric to trace (32-char hex) |
+| `direction` | string | Yes | — | `"downstream"` (toward reports) or `"upstream"` (toward tables) |
+| `offset` | int | No | 0 | Skip first N results for pagination |
 
 ### LLM-Facing Description
 
 ```
-Trace lineage of a Metric in a specific direction.
+Trace lineage of a Metric in a specific direction using live graph traversal.
 
 DIRECTION:
-- 'downstream': Find reports that USE this metric (M/A → Reports)
-- 'upstream': Find source tables and dependencies (M/A → Tables)
+- 'downstream': Find reports that USE this metric (live BFS traversal)
+- 'upstream': Find source tables and dependencies (live BFS traversal)
 
-WHY SPLIT? High-connectivity metrics (e.g., 'Retail Sales Value' with 6000+ reports)
-would return too much data in a single call. Choose the direction relevant to your query.
+WHY SPLIT? High-connectivity metrics would return too much data in a single call.
+Choose the direction relevant to your query.
 
 CORRECT USAGE:
 - First search: search-metrics(query="Retail Sales")
 - Then trace downstream: trace-metric(guid="2F00974D...", direction="downstream")
 - Or trace upstream: trace-metric(guid="2F00974D...", direction="upstream")
 
-RETURNS:
-- downstream: metric details + reports[] (max 50)
-- upstream: metric details + tables[] (max 50) + dependencies[] (max 50)
+PAGINATION: Returns 100 results. If moreResults=true, call again with offset+100.
 ```
 
 ### Cypher Query (downstream)
@@ -377,27 +417,63 @@ RETURNS:
 ```cypher
 // Trace DOWNSTREAM lineage for a Metric (toward reports)
 // $guid: Full GUID of the Metric
+// $offset: Pagination offset
+//
+// LIVE TRAVERSAL: Follows incoming DEPENDS_ON relationships to find consumers.
+// Traverses up to 10 hops to find Reports/GridReports/Documents that use this metric.
 
 MATCH (n:Metric {guid: $guid})
 
+// Get effective status (updated takes precedence)
 WITH n,
      COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
 
-// Get reports using this metric (from pre-computed lineage)
-OPTIONAL MATCH (r:MSTRObject)
-WHERE r.guid IN COALESCE(n.lineage_used_by_reports, [])
-WITH n, effectiveStatus, collect(DISTINCT {
-  name: r.name,
-  guid: r.guid,
-  type: r.type,
-  priority: r.priority_level,
-  area: r.usage_area
-})[0..50] as reports
+// Find prioritized reports that depend on this metric (live traversal)
+// Filter: Only prioritized reports (priority_level IS NOT NULL)
+OPTIONAL MATCH (report)-[:DEPENDS_ON*1..10]->(n)
+WHERE report.type IN ['Report', 'GridReport', 'Document']
+  AND report.priority_level IS NOT NULL
 
+WITH n, effectiveStatus, report
+ORDER BY report.name ASC
+SKIP $offset
+LIMIT 101
+
+// Collect paginated reports
+WITH n, effectiveStatus, collect(DISTINCT {
+  name: report.name,
+  guid: report.guid,
+  type: report.type,
+  priority: report.priority_level,
+  area: report.usage_area
+}) as fetched
+
+// Return metric with all properties (updated_ values take precedence)
 RETURN {
-  metric: { ... 21 properties ... },
+  metric: {
+    type: 'Metric',
+    guid: n.guid,
+    name: n.name,
+    status: effectiveStatus,
+    priority: n.inherited_priority_level,
+    formula: n.formula,
+    notes: COALESCE(n.updated_parity_notes, n.parity_notes),
+    raw: COALESCE(n.updated_db_raw, n.db_raw),
+    serve: COALESCE(n.updated_db_serve, n.db_serve),
+    semantic: n.pb_semantic,
+    edwTable: COALESCE(n.updated_edw_table, n.edw_table),
+    edwColumn: n.edw_column,
+    adeTable: COALESCE(n.updated_ade_db_table, n.ade_db_table),
+    adeColumn: n.ade_db_column,
+    semanticName: n.pb_semantic_name,
+    semanticModel: n.pb_semantic_model,
+    dbEssential: n.db_essential,
+    pbEssential: n.pb_essential,
+    ado_link: COALESCE(n.updated_ado_link, n.ado_link)
+  },
   direction: 'downstream',
-  reports: reports
+  reports: fetched[0..100],
+  moreResults: size(fetched) > 100
 } as result
 ```
 
@@ -406,36 +482,72 @@ RETURN {
 ```cypher
 // Trace UPSTREAM lineage for a Metric (toward source tables)
 // $guid: Full GUID of the Metric
+// $offset: Pagination offset
+//
+// LIVE TRAVERSAL: Follows outgoing DEPENDS_ON relationships to find data sources.
+// Tables are reached via Facts; Dependencies are direct DEPENDS_ON targets.
 
 MATCH (n:Metric {guid: $guid})
 
+// Get effective status (updated takes precedence)
 WITH n,
      COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
 
-// Get source tables (from pre-computed lineage)
-OPTIONAL MATCH (t:MSTRObject)
-WHERE t.guid IN COALESCE(n.lineage_source_tables, [])
+// Find source tables via live traversal (Metric -> ... -> LogicalTable)
+OPTIONAL MATCH (n)-[:DEPENDS_ON*1..10]->(t)
+WHERE t.type IN ['LogicalTable', 'Table']
+
+WITH n, effectiveStatus, t
+ORDER BY t.name ASC
+SKIP $offset
+LIMIT 101
+
+// Collect paginated tables
 WITH n, effectiveStatus, collect(DISTINCT {
   name: t.name,
   guid: t.guid,
   type: t.type,
   physicalTable: t.physical_table_name,
   database: t.database_instance
-})[0..50] as tables
+}) as fetchedTables
 
-// Get direct dependencies (1-hop toward sources)
-OPTIONAL MATCH (n)-[:DEPENDS_ON]->(dep:MSTRObject)
-WITH n, effectiveStatus, tables, collect(DISTINCT {
+// Get direct dependencies (depth 1-2 for immediate dependencies)
+OPTIONAL MATCH (n)-[:DEPENDS_ON*1..2]->(dep)
+WHERE dep.type IN ['Fact', 'Metric', 'Attribute', 'DerivedMetric', 'Column', 'Transformation']
+
+WITH n, effectiveStatus, fetchedTables, collect(DISTINCT {
   name: dep.name,
   guid: dep.guid,
   type: dep.type,
   formula: dep.formula
-})[0..50] as dependencies
+})[0..100] as dependencies
 
+// Return metric with all properties (updated_ values take precedence)
 RETURN {
-  metric: { ... 21 properties ... },
+  metric: {
+    type: 'Metric',
+    guid: n.guid,
+    name: n.name,
+    status: effectiveStatus,
+    priority: n.inherited_priority_level,
+    formula: n.formula,
+    notes: COALESCE(n.updated_parity_notes, n.parity_notes),
+    raw: COALESCE(n.updated_db_raw, n.db_raw),
+    serve: COALESCE(n.updated_db_serve, n.db_serve),
+    semantic: n.pb_semantic,
+    edwTable: COALESCE(n.updated_edw_table, n.edw_table),
+    edwColumn: n.edw_column,
+    adeTable: COALESCE(n.updated_ade_db_table, n.ade_db_table),
+    adeColumn: n.ade_db_column,
+    semanticName: n.pb_semantic_name,
+    semanticModel: n.pb_semantic_model,
+    dbEssential: n.db_essential,
+    pbEssential: n.pb_essential,
+    ado_link: COALESCE(n.updated_ado_link, n.ado_link)
+  },
   direction: 'upstream',
-  tables: tables,
+  tables: fetchedTables[0..100],
+  moreResults: size(fetchedTables) > 100,
   dependencies: dependencies
 } as result
 ```
@@ -494,31 +606,30 @@ RETURN {
 
 ### Input Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `guid` | string | Yes | Full GUID of the Attribute to trace (32-char hex) |
-| `direction` | string | Yes | `"downstream"` (toward reports) or `"upstream"` (toward tables) |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `guid` | string | Yes | — | Full GUID of the Attribute to trace (32-char hex) |
+| `direction` | string | Yes | — | `"downstream"` (toward reports) or `"upstream"` (toward tables) |
+| `offset` | int | No | 0 | Skip first N results for pagination |
 
 ### LLM-Facing Description
 
 ```
-Trace lineage of an Attribute in a specific direction.
+Trace lineage of an Attribute in a specific direction using live graph traversal.
 
 DIRECTION:
-- 'downstream': Find reports that USE this attribute (M/A → Reports)
-- 'upstream': Find source tables and dependencies (M/A → Tables)
+- 'downstream': Find reports that USE this attribute (live BFS traversal)
+- 'upstream': Find source tables and dependencies (live BFS traversal)
 
-WHY SPLIT? High-connectivity attributes (e.g., 'Product' with thousands of reports)
-would return too much data in a single call. Choose the direction relevant to your query.
+WHY SPLIT? High-connectivity attributes would return too much data in a single call.
+Choose the direction relevant to your query.
 
 CORRECT USAGE:
 - First search: search-attributes(query="Product Category")
 - Then trace downstream: trace-attribute(guid="BC105EDE...", direction="downstream")
 - Or trace upstream: trace-attribute(guid="BC105EDE...", direction="upstream")
 
-RETURNS:
-- downstream: attribute details + reports[] (max 50)
-- upstream: attribute details + tables[] (max 50) + dependencies[] (max 50)
+PAGINATION: Returns 100 results. If moreResults=true, call again with offset+100.
 ```
 
 ### Cypher Query (downstream)
@@ -526,27 +637,63 @@ RETURNS:
 ```cypher
 // Trace DOWNSTREAM lineage for an Attribute (toward reports)
 // $guid: Full GUID of the Attribute
+// $offset: Pagination offset
+//
+// LIVE TRAVERSAL: Follows incoming DEPENDS_ON relationships to find consumers.
+// Traverses up to 10 hops to find Reports/GridReports/Documents that use this attribute.
 
 MATCH (n:Attribute {guid: $guid})
 
+// Get effective status (updated takes precedence)
 WITH n,
      COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
 
-// Get reports using this attribute (from pre-computed lineage)
-OPTIONAL MATCH (r:MSTRObject)
-WHERE r.guid IN COALESCE(n.lineage_used_by_reports, [])
-WITH n, effectiveStatus, collect(DISTINCT {
-  name: r.name,
-  guid: r.guid,
-  type: r.type,
-  priority: r.priority_level,
-  area: r.usage_area
-})[0..50] as reports
+// Find prioritized reports that depend on this attribute (live traversal)
+// Filter: Only prioritized reports (priority_level IS NOT NULL)
+OPTIONAL MATCH (report)-[:DEPENDS_ON*1..10]->(n)
+WHERE report.type IN ['Report', 'GridReport', 'Document']
+  AND report.priority_level IS NOT NULL
 
+WITH n, effectiveStatus, report
+ORDER BY report.name ASC
+SKIP $offset
+LIMIT 101
+
+// Collect paginated reports
+WITH n, effectiveStatus, collect(DISTINCT {
+  name: report.name,
+  guid: report.guid,
+  type: report.type,
+  priority: report.priority_level,
+  area: report.usage_area
+}) as fetched
+
+// Return attribute with all properties (updated_ values take precedence)
 RETURN {
-  attribute: { ... 21 properties ... },
+  attribute: {
+    type: 'Attribute',
+    guid: n.guid,
+    name: n.name,
+    status: effectiveStatus,
+    priority: n.inherited_priority_level,
+    forms_json: n.forms_json,
+    notes: COALESCE(n.updated_parity_notes, n.parity_notes),
+    raw: COALESCE(n.updated_db_raw, n.db_raw),
+    serve: COALESCE(n.updated_db_serve, n.db_serve),
+    semantic: n.pb_semantic,
+    edwTable: COALESCE(n.updated_edw_table, n.edw_table),
+    edwColumn: n.edw_column,
+    adeTable: COALESCE(n.updated_ade_db_table, n.ade_db_table),
+    adeColumn: n.ade_db_column,
+    semanticName: n.pb_semantic_name,
+    semanticModel: n.pb_semantic_model,
+    dbEssential: n.db_essential,
+    pbEssential: n.pb_essential,
+    ado_link: COALESCE(n.updated_ado_link, n.ado_link)
+  },
   direction: 'downstream',
-  reports: reports
+  reports: fetched[0..100],
+  moreResults: size(fetched) > 100
 } as result
 ```
 
@@ -555,35 +702,71 @@ RETURN {
 ```cypher
 // Trace UPSTREAM lineage for an Attribute (toward source tables)
 // $guid: Full GUID of the Attribute
+// $offset: Pagination offset
+//
+// LIVE TRAVERSAL: Follows outgoing DEPENDS_ON relationships to find data sources.
+// Tables are reached via direct relationships or through intermediate objects.
 
 MATCH (n:Attribute {guid: $guid})
 
+// Get effective status (updated takes precedence)
 WITH n,
      COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
 
-// Get source tables (from pre-computed lineage)
-OPTIONAL MATCH (t:MSTRObject)
-WHERE t.guid IN COALESCE(n.lineage_source_tables, [])
+// Find source tables via live traversal (Attribute -> ... -> LogicalTable)
+OPTIONAL MATCH (n)-[:DEPENDS_ON*1..10]->(t)
+WHERE t.type IN ['LogicalTable', 'Table']
+
+WITH n, effectiveStatus, t
+ORDER BY t.name ASC
+SKIP $offset
+LIMIT 101
+
+// Collect paginated tables
 WITH n, effectiveStatus, collect(DISTINCT {
   name: t.name,
   guid: t.guid,
   type: t.type,
   physicalTable: t.physical_table_name,
   database: t.database_instance
-})[0..50] as tables
+}) as fetchedTables
 
-// Get direct dependencies (1-hop toward sources)
-OPTIONAL MATCH (n)-[:DEPENDS_ON]->(dep:MSTRObject)
-WITH n, effectiveStatus, tables, collect(DISTINCT {
+// Get direct dependencies (depth 1-2 for immediate dependencies)
+OPTIONAL MATCH (n)-[:DEPENDS_ON*1..2]->(dep)
+WHERE dep.type IN ['Fact', 'Column', 'Attribute', 'Transformation']
+
+WITH n, effectiveStatus, fetchedTables, collect(DISTINCT {
   name: dep.name,
   guid: dep.guid,
   type: dep.type
-})[0..50] as dependencies
+})[0..100] as dependencies
 
+// Return attribute with all properties (updated_ values take precedence)
 RETURN {
-  attribute: { ... 21 properties ... },
+  attribute: {
+    type: 'Attribute',
+    guid: n.guid,
+    name: n.name,
+    status: effectiveStatus,
+    priority: n.inherited_priority_level,
+    forms_json: n.forms_json,
+    notes: COALESCE(n.updated_parity_notes, n.parity_notes),
+    raw: COALESCE(n.updated_db_raw, n.db_raw),
+    serve: COALESCE(n.updated_db_serve, n.db_serve),
+    semantic: n.pb_semantic,
+    edwTable: COALESCE(n.updated_edw_table, n.edw_table),
+    edwColumn: n.edw_column,
+    adeTable: COALESCE(n.updated_ade_db_table, n.ade_db_table),
+    adeColumn: n.ade_db_column,
+    semanticName: n.pb_semantic_name,
+    semanticModel: n.pb_semantic_model,
+    dbEssential: n.db_essential,
+    pbEssential: n.pb_essential,
+    ado_link: COALESCE(n.updated_ado_link, n.ado_link)
+  },
   direction: 'upstream',
-  tables: tables,
+  tables: fetchedTables[0..100],
+  moreResults: size(fetchedTables) > 100,
   dependencies: dependencies
 } as result
 ```
@@ -694,31 +877,27 @@ search-metrics(query="*", status=["Not Planned"], offset=100)
 
 ## Graph Traversal Rules
 
-**Reference:** [90-symmetric-bfs-traversal.md](./flowdash-queries/90-symmetric-bfs-traversal.md)
-
-The trace tools use pre-computed lineage arrays that were built following these traversal rules.
-
-### Core Concept: Capture vs Traverse
-
-| Behavior | Types | What Happens |
-|----------|-------|--------------|
-| **TRAVERSE** | `Prompt`, `Filter` | BFS follows their edges to find more objects |
-| **CAPTURE** | `Metric`, `Attribute`, `DerivedMetric`, `Transformation` | Added to results, but BFS stops here |
+The trace tools use **live graph traversal** following `DEPENDS_ON` relationships up to 10 hops.
 
 ### Traversal Directions
 
-| Direction | Purpose | Intermediate Types | Target Types |
-|-----------|---------|-------------------|--------------|
-| **Inbound** (Reports → M/A) | Find reports using an object | `[Prompt, Filter]` | `[Report, GridReport, Document]` |
-| **Outbound** (M/A → Tables) | Find source tables | `[Fact, Metric, Attribute]` | `[LogicalTable, Table]` |
+| Direction | Purpose | Query Pattern | Target Types |
+|-----------|---------|---------------|--------------|
+| **Downstream** (M/A → Reports) | Find prioritized reports using an object | `(report)-[:DEPENDS_ON*1..10]->(n)` | `[Report, GridReport, Document]` |
+| **Upstream** (M/A → Tables) | Find source tables | `(n)-[:DEPENDS_ON*1..10]->(table)` | `[LogicalTable, Table]` |
 
-### Pre-computed Lineage
+### Prioritized Filter
 
-The trace tools use pre-computed arrays for performance:
-- `lineage_used_by_reports` — Array of report GUIDs that use this M/A
-- `lineage_source_tables` — Array of table GUIDs this M/A depends on
+Downstream queries only return **prioritized reports** — those with `priority_level IS NOT NULL`. This aligns MCP tool behavior with the dashboard queries and ensures consistent results.
 
-**Why Pre-computed:** Runtime BFS traversal was timing out (>30 seconds) for high-connectivity objects (e.g., "Retail Sales Value" with 6,000+ reports). Pre-computed arrays reduce query time to <100ms.
+### Live Traversal Design
+
+The trace tools perform **live BFS traversal** at query time:
+- **Depth:** Fixed at 10 hops to balance completeness and performance
+- **Pagination:** Results are paginated (100 per page) with `moreResults` flag
+- **Ordering:** Results sorted by name for consistent pagination
+
+**Why Live Traversal:** Ensures results reflect the current state of the graph without relying on potentially stale pre-computed data.
 
 ---
 
@@ -749,8 +928,6 @@ The trace tools use pre-computed arrays for performance:
 | `parity_status` | Original parity status |
 | `updated_parity_status` | Updated parity status (takes precedence) |
 | `ado_link` | ADO work item URL |
-| `lineage_used_by_reports` | Pre-computed report GUIDs array |
-| `lineage_source_tables` | Pre-computed table GUIDs array |
 
 #### On Attribute
 
@@ -762,8 +939,6 @@ The trace tools use pre-computed arrays for performance:
 | `parity_status` | Original parity status |
 | `updated_parity_status` | Updated parity status (takes precedence) |
 | `ado_link` | ADO work item URL |
-| `lineage_used_by_reports` | Pre-computed report GUIDs array |
-| `lineage_source_tables` | Pre-computed table GUIDs array |
 
 #### On LogicalTable/Table
 
@@ -803,9 +978,158 @@ The following fields have been removed from responses:
 
 ---
 
+## Stress Testing
+
+This section documents stress testing methodology and baseline results for performance validation.
+
+### Test Environment
+
+| Component | Version/Details |
+|-----------|-----------------|
+| **MCP Server** | flow-microstrategy-mcp (Docker: `flow-mcp-test:latest`) |
+| **Neo4j** | 5.22 (Docker: `msts-neo4j`) |
+| **Transport** | HTTP mode on port 8888 |
+| **Host Binding** | `0.0.0.0:80` (container) → `8888` (host) |
+
+### Running the MCP Server for Testing
+
+```bash
+# Start MCP server in HTTP mode via Docker
+docker run -d --name flow-mcp-stress \
+  -p 8888:80 \
+  -e FLOW_URI="bolt://host.docker.internal:7687" \
+  -e FLOW_MCP_TRANSPORT="http" \
+  -e FLOW_MCP_HTTP_HOST="0.0.0.0" \
+  flow-mcp-test:latest
+
+# Initialize the MCP client
+curl -s -X POST http://localhost:8888/mcp \
+  -u "neo4j:password" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"stress-test","version":"1.0"}}}'
+```
+
+### Performance Baseline Results
+
+| Tool | Latency | Results | Threshold | Status |
+|------|---------|---------|-----------|--------|
+| `search-metrics` | 50-57ms | 100 results | < 500ms | ✅ PASS |
+| `search-attributes` | 37ms | 51 results | < 500ms | ✅ PASS |
+| `trace-metric upstream` | 72ms | 1 table, 3 deps | < 500ms | ✅ PASS |
+| `trace-attribute upstream` | 81ms | 7 tables, 3 deps | < 1s | ✅ PASS |
+| `trace-metric downstream` | 5442ms | 2 reports | < 10s | ✅ PASS |
+| `trace-attribute downstream` | 6020ms | 53 reports | < 10s | ✅ PASS |
+
+**Note:** Downstream queries are slower due to BFS traversal (up to 10 hops) through the graph.
+
+### Stress Testing Commands
+
+#### 1. High-Connectivity Objects
+
+Find metrics/attributes with many report connections:
+
+```bash
+# Find high-connectivity attributes
+curl -s -X POST http://localhost:8888/mcp \
+  -u "neo4j:password" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search-attributes","arguments":{"query":"Product"}}}' | \
+  jq -r '.result.content[0].text' | \
+  jq '.[0].results | sort_by(-.reportCount) | .[0:5] | .[] | {name, guid, reportCount}'
+```
+
+#### 2. Pagination Test
+
+Iterate through all pages:
+
+```bash
+# Test pagination (offset 0, 100, 200...)
+for offset in 0 100 200; do
+  echo "=== Offset: $offset ==="
+  curl -s -X POST http://localhost:8888/mcp \
+    -u "neo4j:password" \
+    -H "Content-Type: application/json" \
+    -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"search-metrics\",\"arguments\":{\"query\":\"Value\",\"offset\":$offset}}}" | \
+    jq -r '.result.content[0].text' | \
+    jq '.[0] | {results: (.results | length), moreResults}'
+done
+```
+
+#### 3. Concurrent Requests
+
+```bash
+# 10 concurrent requests
+seq 1 10 | xargs -P10 -I{} curl -s -X POST http://localhost:8888/mcp \
+  -u "neo4j:password" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":{},"method":"tools/call","params":{"name":"search-metrics","arguments":{"query":"Value"}}}'
+```
+
+#### 4. Trace Tool Testing
+
+```bash
+# Trace attribute downstream (find reports using it)
+curl -s -X POST http://localhost:8888/mcp \
+  -u "neo4j:password" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"trace-attribute","arguments":{"guid":"YOUR_GUID_HERE","direction":"downstream"}}}'
+
+# Trace metric upstream (find source tables)
+curl -s -X POST http://localhost:8888/mcp \
+  -u "neo4j:password" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"trace-metric","arguments":{"guid":"YOUR_GUID_HERE","direction":"upstream"}}}'
+```
+
+### Concurrent Load Test Results
+
+| Test | Total Time | Avg per Request | Success Rate |
+|------|------------|-----------------|--------------|
+| 10 parallel requests | 146ms | 14ms | 90-100% |
+| 20 parallel requests | 187ms | 9ms | 100% |
+| 50 parallel requests | 449ms | 9ms | 100% |
+
+### Expected Response Time Thresholds
+
+| Tool | Normal | Stress Threshold |
+|------|--------|------------------|
+| `search-metrics` | < 100ms | < 500ms |
+| `search-attributes` | < 100ms | < 500ms |
+| `trace-metric downstream` | < 6s | < 10s |
+| `trace-metric upstream` | < 100ms | < 500ms |
+| `trace-attribute downstream` | < 6s | < 10s |
+| `trace-attribute upstream` | < 100ms | < 500ms |
+
+### Key Metrics to Monitor
+
+1. **Query time:** Should stay under thresholds above
+2. **Memory:** Watch for spikes during traversal queries (MCP: ~11 MiB, Neo4j: ~3 GiB typical)
+3. **Connection pool:** Monitor under concurrent load
+4. **`moreResults` accuracy:** Verify pagination terminates correctly
+
+### Sample Report Data
+
+Reports returned from downstream traces include:
+
+```json
+{
+  "name": "Report Name",
+  "guid": "ABC123...",
+  "type": "Report",
+  "priority": 3,
+  "area": "Usage Area"
+}
+```
+
+The `priority` field corresponds to `report.priority_level` in the database (not `inherited_priority_level`, which is used for metrics/attributes).
+
+---
+
 ## Update History
 
 | Date | Version | Change |
 |------|---------|--------|
+| 2026-02-04 | 3.1.0 | Fixed downstream filter: `report.inherited_priority_level` → `report.priority_level`; Added stress testing documentation |
+| 2026-02-04 | 3.0.0 | Replaced pre-computed lineage with live graph traversal (DEPENDS_ON*1..10); Added pagination to trace tools |
 | 2026-02-03 | 2.0.0 | Major refactor: Consolidated 15 tools into 4 unified tools; Added full Cypher queries and implementation details |
 | 2026-01-30 | 1.0.0 | Initial document with 12 MSTR tools |
