@@ -86,15 +86,16 @@ func SearchAttributesSpec() mcp.Tool {
 	return mcp.NewTool("search-attributes",
 		mcp.WithDescription(
 			"Find Attributes by GUID or name. Accepts full GUIDs, partial GUIDs (8+ chars), or name search terms.\n\n"+
-				"CORRECT USAGE:\n"+
-				"- search-attributes(query=\"BC105EDE477D7CEF3296FFA6E4D26797\") - full GUID\n"+
-				"- search-attributes(query=\"BC105EDE\") - partial GUID (8+ chars)\n"+
-				"- search-attributes(query=\"Product Category\") - name search\n"+
-				"- search-attributes(query=\"product\", status=[\"Complete\"]) - with filter\n\n"+
-				"INCORRECT USAGE:\n"+
-				"- DON'T use partial GUID < 8 chars (too ambiguous)\n"+
-				"- DON'T use for lineage - use trace-attribute instead\n"+
-				"- DON'T search for Metrics here - use search-metrics\n\n"+
+				"USE FOR:\n"+
+				"- Finding an attribute by its full GUID: search-attributes(query=\"BC105EDE477D7CEF3296FFA6E4D26797\")\n"+
+				"- Finding attributes by partial GUID (8+ chars): search-attributes(query=\"BC105EDE\")\n"+
+				"- Searching attributes by name: search-attributes(query=\"Product Category\")\n"+
+				"- Filtering by parity status: search-attributes(query=\"product\", status=[\"Complete\"])\n"+
+				"- Getting attribute details (forms, mappings, counts) before tracing lineage\n\n"+
+				"DO NOT USE FOR:\n"+
+				"- Partial GUIDs with less than 8 characters (too ambiguous)\n"+
+				"- Lineage tracing (use trace-attribute with the GUID instead)\n"+
+				"- Searching Metrics (use search-metrics instead)\n\n"+
 				"PAGINATION: Returns 100 results. If moreResults=true, call again with offset+100.",
 		),
 		mcp.WithInputSchema[SearchAttributesInput](),

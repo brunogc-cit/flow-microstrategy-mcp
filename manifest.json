@@ -95,56 +95,36 @@
   },
   "tools": [
     {
-      "name": "get-metric-by-guid",
-      "description": "Get comprehensive details about a MicroStrategy Metric by GUID. Returns 22 fields including: name, status, team, priority, formula, EDW/ADE mappings (edwTable, edwColumn, adeTable, adeColumn), Power BI mappings (semanticName, semanticModel), Databricks mappings (raw, serve), and pre-computed counts (reportCount, tableCount). Use for detailed object inspection and gap analysis. Limited to 100 results per call."
+      "name": "get-schema",
+      "description": "Retrieve the schema information from the Neo4j database, including node labels, relationship types, and property keys. USE FOR: Understanding the database structure before writing queries. DO NOT USE FOR: Querying actual data (use read-cypher instead)."
     },
     {
-      "name": "get-attribute-by-guid",
-      "description": "Get comprehensive details about a MicroStrategy Attribute by GUID. Returns 22 fields including: name, status, team, priority, formula, EDW/ADE mappings (edwTable, edwColumn, adeTable, adeColumn), Power BI mappings (semanticName, semanticModel), Databricks mappings (raw, serve), and pre-computed counts (reportCount, tableCount). Use for detailed object inspection and gap analysis. Limited to 100 results per call."
+      "name": "read-cypher",
+      "description": "Execute read-only Cypher queries against the Neo4j database. USE FOR: Custom queries, ad-hoc data exploration, complex aggregations. DO NOT USE FOR: Write operations (use write-cypher), schema/admin commands, or PROFILE queries."
     },
     {
-      "name": "search-metrics",
-      "description": "Search for MicroStrategy Metrics used by prioritized reports. Returns: type, name, guid, status, priority, team, reportCount, tableCount. Results are ordered by report count (most impactful first). PAGINATION: Returns 100 results per page. Use 'offset' parameter to paginate. Response includes 'moreResults' boolean - if true, call again with offset+100. Use for finding high-impact metrics for migration planning."
-    },
-    {
-      "name": "search-attributes",
-      "description": "Search for MicroStrategy Attributes used by prioritized reports. Returns: type, name, guid, status, priority, team, reportCount, tableCount. Results are ordered by report count (most impactful first). PAGINATION: Returns 100 results per page. Use 'offset' parameter to paginate. Response includes 'moreResults' boolean - if true, call again with offset+100. Use for finding high-impact attributes for migration planning."
-    },
-    {
-      "name": "get-reports-using-metric",
-      "description": "Find all Reports, GridReports, and Documents that use a specific Metric. Returns for each report: name, guid, type, priority (1-5), area, department, userCount. PAGINATION: Returns 100 reports per page. Use 'offset' to paginate. Response includes 'moreResults' boolean and total count via 'totalReports'. Note: High-usage metrics (e.g., 'Retail Sales Value') may have 6000+ reports. Use for impact analysis: understanding what will be affected by changes."
-    },
-    {
-      "name": "get-reports-using-attribute",
-      "description": "Find all Reports, GridReports, and Documents that use a specific Attribute. Returns for each report: name, guid, type, priority (1-5), area, department, userCount. PAGINATION: Returns 100 reports per page. Use 'offset' to paginate. Response includes 'moreResults' boolean and total count via 'totalReports'. Note: High-usage attributes may have thousands of reports. Use for impact analysis: understanding what will be affected by changes."
-    },
-    {
-      "name": "get-metric-source-tables",
-      "description": "Find source database tables (LogicalTable/Table) that a Metric depends on. Returns for each table: name, guid, type, physicalTableName, databaseInstance. Traverses the full dependency graph (up to 10 levels) through Facts, Metrics, Attributes, Columns. PAGINATION: Returns 100 tables per page. Use 'offset' to paginate. Response includes 'moreResults' boolean and 'totalTables' count. Use for data lineage analysis and DBT model generation."
-    },
-    {
-      "name": "get-attribute-source-tables",
-      "description": "Find source database tables (LogicalTable/Table) that an Attribute depends on. Returns for each table: name, guid, type, physicalTableName, databaseInstance. Traverses the full dependency graph (up to 10 levels) through Facts, Metrics, Attributes, Columns. PAGINATION: Returns 100 tables per page. Use 'offset' to paginate. Response includes 'moreResults' boolean and 'totalTables' count. Use for data lineage analysis and DBT model generation."
-    },
-    {
-      "name": "get-metric-dependencies",
-      "description": "Find what a Metric directly depends on (downstream/outbound dependencies). Returns two parts: (1) directDependencies: Objects at 1-hop distance (Facts, Metrics, Attributes, Columns) with type, name, guid, formula. (2) transitiveTableCount: Total count of tables reachable through the full dependency chain (2-10 hops). PAGINATION: Direct dependencies are paginated (100 per page). Use 'offset' to paginate. Response includes 'moreResults' boolean and 'totalDirectDeps' count. Use for understanding metric calculation logic and formula translation to SQL/DBT."
-    },
-    {
-      "name": "get-attribute-dependencies",
-      "description": "Find what an Attribute directly depends on (downstream/outbound dependencies). Returns two parts: (1) directDependencies: Objects at 1-hop distance (Facts, Metrics, Attributes, Columns) with type, name, guid, formula. (2) transitiveTableCount: Total count of tables reachable through the full dependency chain (2-10 hops). PAGINATION: Direct dependencies are paginated (100 per page). Use 'offset' to paginate. Response includes 'moreResults' boolean and 'totalDirectDeps' count. Use for understanding attribute structure and data lineage."
-    },
-    {
-      "name": "get-metric-dependents",
-      "description": "Find all Reports, GridReports, and Documents that depend on a Metric (upstream/inbound dependencies). Traverses the dependency graph through Prompts and Filters (up to 10 levels). Returns for each report: name, guid, type, priority, area, department, userCount. Also returns 'totalReports' count for the full dataset. PAGINATION: Returns 100 reports per page. Use 'offset' to paginate. Response includes 'moreResults' boolean. Use for impact analysis before modifying or deprecating a metric."
-    },
-    {
-      "name": "get-attribute-dependents",
-      "description": "Find all Reports, GridReports, and Documents that depend on an Attribute (upstream/inbound dependencies). Traverses the dependency graph through Prompts and Filters (up to 10 levels). Returns for each report: name, guid, type, priority, area, department, userCount. Also returns 'totalReports' count for the full dataset. PAGINATION: Returns 100 reports per page. Use 'offset' to paginate. Response includes 'moreResults' boolean. Use for impact analysis before modifying or deprecating an attribute."
+      "name": "write-cypher",
+      "description": "Execute arbitrary Cypher queries with write access against the Neo4j database. USE FOR: Creating, updating, or deleting nodes and relationships. DO NOT USE FOR: Read-only queries (use read-cypher instead). CAUTION: LLM-generated queries could cause harm - use only in development environments."
     },
     {
       "name": "list-gds-procedures",
-      "description": "Use this tool to discover what graph science and analytics functions are available in the current Neo4j environment. It returns a structured list describing each function — what it does, how to use it, the inputs it needs, and what kind of results it produces. Do this before any reasoning, query generation, or analysis so you know what capabilities exist. Graph science and analytics functions help you with centrality, community detection, similarity, path finding, and identifying dependencies between nodes. The tool helps you understand the analytical capabilities of the system so that you can plan or compose the right graph science operations automatically. An empty response indicates that GDS is not installed and the user should be told to install it. Remember to use unique names for graph data science projections to avoid collisions and to drop them afterwards to save memory. You must always tell the user the function you will use."
+      "description": "Discover available Graph Data Science (GDS) procedures in the Neo4j environment. USE FOR: Planning graph analytics (centrality, community detection, similarity, pathfinding) before executing them. DO NOT USE FOR: Executing GDS procedures (use read-cypher or write-cypher with the discovered procedure). NOTE: Empty response indicates GDS is not installed."
+    },
+    {
+      "name": "search-metrics",
+      "description": "Find MicroStrategy Metrics by GUID or name. Accepts full GUIDs, partial GUIDs (8+ chars), or name search terms. USE FOR: Finding metrics by name or GUID, filtering by parity status, getting metric details before tracing lineage. DO NOT USE FOR: Partial GUIDs < 8 chars, lineage tracing (use trace-metric), searching Attributes (use search-attributes). PAGINATION: Returns 100 results; if moreResults=true, call again with offset+100."
+    },
+    {
+      "name": "search-attributes",
+      "description": "Find MicroStrategy Attributes by GUID or name. Accepts full GUIDs, partial GUIDs (8+ chars), or name search terms. USE FOR: Finding attributes by name or GUID, filtering by parity status, getting attribute details before tracing lineage. DO NOT USE FOR: Partial GUIDs < 8 chars, lineage tracing (use trace-attribute), searching Metrics (use search-metrics). PAGINATION: Returns 100 results; if moreResults=true, call again with offset+100."
+    },
+    {
+      "name": "trace-metric",
+      "description": "Trace lineage of a MicroStrategy Metric using live graph traversal. USE FOR: Impact analysis - finding reports that use a metric (upstream), data lineage - finding source tables (downstream), migration planning. DO NOT USE FOR: Searching metrics by name (use search-metrics first to get the GUID). DIRECTION: 'upstream' = toward reports (consumers), 'downstream' = toward tables (data sources). PAGINATION: Returns 100 results; if moreResults=true, call again with offset+100."
+    },
+    {
+      "name": "trace-attribute",
+      "description": "Trace lineage of a MicroStrategy Attribute using live graph traversal. USE FOR: Impact analysis - finding reports that use an attribute (upstream), data lineage - finding source tables (downstream), migration planning. DO NOT USE FOR: Searching attributes by name (use search-attributes first to get the GUID). DIRECTION: 'upstream' = toward reports (consumers), 'downstream' = toward tables (data sources). PAGINATION: Returns 100 results; if moreResults=true, call again with offset+100."
     }
   ],
   "compatibility": {

@@ -86,15 +86,16 @@ func SearchMetricsSpec() mcp.Tool {
 	return mcp.NewTool("search-metrics",
 		mcp.WithDescription(
 			"Find Metrics by GUID or name. Accepts full GUIDs, partial GUIDs (8+ chars), or name search terms.\n\n"+
-				"CORRECT USAGE:\n"+
-				"- search-metrics(query=\"2F00974D44E1D0D24CA344ABD872806A\") - full GUID\n"+
-				"- search-metrics(query=\"2F00974D\") - partial GUID (8+ chars)\n"+
-				"- search-metrics(query=\"Retail Sales\") - name search\n"+
-				"- search-metrics(query=\"sales\", status=[\"Complete\"]) - with filter\n\n"+
-				"INCORRECT USAGE:\n"+
-				"- DON'T use partial GUID < 8 chars (too ambiguous)\n"+
-				"- DON'T use for lineage - use trace-metric instead\n"+
-				"- DON'T search for Attributes here - use search-attributes\n\n"+
+				"USE FOR:\n"+
+				"- Finding a metric by its full GUID: search-metrics(query=\"2F00974D44E1D0D24CA344ABD872806A\")\n"+
+				"- Finding metrics by partial GUID (8+ chars): search-metrics(query=\"2F00974D\")\n"+
+				"- Searching metrics by name: search-metrics(query=\"Retail Sales\")\n"+
+				"- Filtering by parity status: search-metrics(query=\"sales\", status=[\"Complete\"])\n"+
+				"- Getting metric details (formula, mappings, counts) before tracing lineage\n\n"+
+				"DO NOT USE FOR:\n"+
+				"- Partial GUIDs with less than 8 characters (too ambiguous)\n"+
+				"- Lineage tracing (use trace-metric with the GUID instead)\n"+
+				"- Searching Attributes (use search-attributes instead)\n\n"+
 				"PAGINATION: Returns 100 results. If moreResults=true, call again with offset+100.",
 		),
 		mcp.WithInputSchema[SearchMetricsInput](),

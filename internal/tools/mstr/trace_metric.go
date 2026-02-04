@@ -12,14 +12,14 @@ import (
 // TraceMetricInput defines the input parameters for the trace-metric tool
 type TraceMetricInput struct {
 	GUID      string `json:"guid" jsonschema:"required,description=Full GUID of the Metric to trace"`
-	Direction string `json:"direction" jsonschema:"required,enum=downstream,enum=upstream,description=Trace direction: 'downstream' (toward reports - who uses this?) or 'upstream' (toward tables - where does data come from?)"`
+	Direction string `json:"direction" jsonschema:"required,enum=upstream,enum=downstream,description=Trace direction: 'upstream' (toward reports - who uses this?) or 'downstream' (toward tables - where does data come from?)"`
 	Offset    int    `json:"offset,omitempty" jsonschema:"default=0,description=Skip first N results for pagination"`
 }
 
-// traceMetricDownstreamQuery traces downstream lineage (toward reports - who uses this metric?)
+// traceMetricUpstreamQuery traces upstream lineage (toward reports - who uses this metric?)
 // Uses LIVE graph traversal - finds objects that depend on this metric via DEPENDS_ON relationships
-const traceMetricDownstreamQuery = `
-// Trace DOWNSTREAM lineage for a Metric (toward reports)
+const traceMetricUpstreamQuery = `
+// Trace UPSTREAM lineage for a Metric (toward reports)
 // $guid: Full GUID of the Metric
 // $offset: Pagination offset
 //
@@ -76,16 +76,16 @@ RETURN {
     pbEssential: n.pb_essential,
     ado_link: COALESCE(n.updated_ado_link, n.ado_link)
   },
-  direction: 'downstream',
+  direction: 'upstream',
   reports: fetched[0..100],
   moreResults: size(fetched) > 100
 } as result
 `
 
-// traceMetricUpstreamQuery traces upstream lineage (toward tables - where does data come from?)
+// traceMetricDownstreamQuery traces downstream lineage (toward tables - where does data come from?)
 // Uses LIVE graph traversal - follows DEPENDS_ON relationships toward data sources
-const traceMetricUpstreamQuery = `
-// Trace UPSTREAM lineage for a Metric (toward source tables)
+const traceMetricDownstreamQuery = `
+// Trace DOWNSTREAM lineage for a Metric (toward source tables)
 // $guid: Full GUID of the Metric
 // $offset: Pagination offset
 //
@@ -150,7 +150,7 @@ RETURN {
     pbEssential: n.pb_essential,
     ado_link: COALESCE(n.updated_ado_link, n.ado_link)
   },
-  direction: 'upstream',
+  direction: 'downstream',
   tables: fetchedTables[0..100],
   moreResults: size(fetchedTables) > 100,
   dependencies: dependencies
@@ -163,13 +163,16 @@ func TraceMetricSpec() mcp.Tool {
 		mcp.WithDescription(
 			"Trace lineage of a Metric in a specific direction using live graph traversal.\n\n"+
 				"DIRECTION:\n"+
-				"- 'downstream': Find PRIORITIZED reports that USE this metric (live BFS traversal)\n"+
-				"- 'upstream': Find source tables and dependencies (live BFS traversal)\n\n"+
-				"NOTE: Downstream only returns reports with priority_level (prioritized reports).\n\n"+
-				"CORRECT USAGE:\n"+
-				"- First search: search-metrics(query=\"Retail Sales\")\n"+
-				"- Then trace downstream: trace-metric(guid=\"2F00974D...\", direction=\"downstream\")\n"+
-				"- Or trace upstream: trace-metric(guid=\"2F00974D...\", direction=\"upstream\")\n\n"+
+				"- 'upstream': Find PRIORITIZED reports that USE this metric (toward consumers)\n"+
+				"- 'downstream': Find source tables and dependencies (toward data sources)\n\n"+
+				"USE FOR:\n"+
+				"- Impact analysis: which reports will be affected if I change this metric? (upstream)\n"+
+				"- Data lineage: where does this metric's data come from? (downstream)\n"+
+				"- Migration planning: understanding metric dependencies before conversion\n\n"+
+				"DO NOT USE FOR:\n"+
+				"- Searching for metrics by name - use search-metrics first to get the GUID\n"+
+				"- Getting metric details without lineage - use search-metrics instead\n\n"+
+				"NOTE: Upstream only returns reports with priority_level (prioritized reports).\n\n"+
 				"PAGINATION: Returns 100 results. If moreResults=true, call again with offset+100.",
 		),
 		mcp.WithInputSchema[TraceMetricInput](),
@@ -213,12 +216,12 @@ func handleTraceMetric(ctx context.Context, deps *tools.ToolDependencies, reques
 	// Select query based on direction
 	var query string
 	switch input.Direction {
-	case "downstream":
-		query = traceMetricDownstreamQuery
 	case "upstream":
 		query = traceMetricUpstreamQuery
+	case "downstream":
+		query = traceMetricDownstreamQuery
 	default:
-		return mcp.NewToolResultError(fmt.Sprintf("Invalid direction '%s': must be 'downstream' or 'upstream'", input.Direction)), nil
+		return mcp.NewToolResultError(fmt.Sprintf("Invalid direction '%s': must be 'upstream' or 'downstream'", input.Direction)), nil
 	}
 
 	params := map[string]any{
