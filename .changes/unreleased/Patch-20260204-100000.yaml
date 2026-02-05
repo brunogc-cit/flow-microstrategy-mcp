@@ -1,3 +1,0 @@
-kind: Patch
-body: "Fix trace tools direction terminology: 'upstream' now correctly points toward reports (consumers), 'downstream' toward source tables (data sources). Updated manifest.json with 8 current tools and improved descriptions with USE FOR/DO NOT USE FOR patterns."
-time: 2026-02-04T10:00:00.000000000Z

@@ -1,3 +1,0 @@
-kind: Minor
-body: Consolidate 15 MSTR tools into 4 unified tools (search-metrics, search-attributes, trace-metric, trace-attribute) with unified GUID/name search and combined lineage tracing
-time: 2026-02-03T12:00:00.000000000Z
