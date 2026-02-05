@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/server"
 	analytics_mocks "github.com/brunogc-cit/flow-microstrategy-mcp/internal/analytics/mocks"
 	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/auth"
 	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/config"
 	db_mocks "github.com/brunogc-cit/flow-microstrategy-mcp/internal/database/mocks"
+	"github.com/mark3labs/mcp-go/server"
 	"go.uber.org/mock/gomock"
 )
 

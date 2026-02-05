@@ -2,9 +2,10 @@ package server
 
 import (
 	"github.com/mark3labs/mcp-go/server"
+
 	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools"
-	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools/cypher"
 	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools/gds"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools/mstr"
 )
 
 // registerTools registers all enabled MCP tools and adds them to the provided MCP server.
@@ -24,8 +25,9 @@ type toolFilter func(tools []ToolDefinition) []ToolDefinition
 type toolCategory int
 
 const (
-	cypherCategory toolCategory = 0
+	cypherCategory toolCategory = 0 // Hidden - generic Neo4j tools (code kept but not exposed)
 	gdsCategory    toolCategory = 1
+	mstrCategory   toolCategory = 2 // MicroStrategy migration tools
 )
 
 type ToolDefinition struct {
@@ -64,6 +66,9 @@ func (s *Neo4jMCPServer) getEnabledTools() []server.ServerTool {
 	if !s.gdsInstalled {
 		filters = append(filters, filterGDSTools)
 	}
+	// Always filter out generic cypher tools (hidden but code kept)
+	filters = append(filters, filterCypherTools)
+
 	deps := &tools.ToolDependencies{
 		DBService:        s.dbService,
 		AnalyticsService: s.anService,
@@ -100,35 +105,54 @@ func filterGDSTools(tools []ToolDefinition) []ToolDefinition {
 	return nonGDSTools
 }
 
+// filterCypherTools removes generic cypher tools (get-schema, read-cypher, write-cypher)
+// These are hidden from users but the code is kept in internal/tools/cypher/
+func filterCypherTools(tools []ToolDefinition) []ToolDefinition {
+	nonCypherTools := make([]ToolDefinition, 0, len(tools))
+	for _, t := range tools {
+		if t.category != cypherCategory {
+			nonCypherTools = append(nonCypherTools, t)
+		}
+	}
+	return nonCypherTools
+}
+
 // getAllToolsDefs returns all available tools with their specs and handlers
 func (s *Neo4jMCPServer) getAllToolsDefs(deps *tools.ToolDependencies) []ToolDefinition {
 
 	return []ToolDefinition{
-		{
-			category: cypherCategory,
-			definition: server.ServerTool{
-				Tool:    cypher.GetSchemaSpec(),
-				Handler: cypher.GetSchemaHandler(deps, s.config.SchemaSampleSize),
-			},
-			readonly: true,
-		},
-		{
-			category: cypherCategory,
-			definition: server.ServerTool{
-				Tool:    cypher.ReadCypherSpec(),
-				Handler: cypher.ReadCypherHandler(deps),
-			},
-			readonly: true,
-		},
-		{
-			category: cypherCategory,
-			definition: server.ServerTool{
-				Tool:    cypher.WriteCypherSpec(),
-				Handler: cypher.WriteCypherHandler(deps),
-			},
-			readonly: false,
-		},
+		// =============================================================================
+		// HIDDEN: Generic Cypher Tools (code kept but not exposed to users)
+		// =============================================================================
+		// These tools are filtered out by filterCypherTools() but kept for potential future use
+		// {
+		// 	category: cypherCategory,
+		// 	definition: server.ServerTool{
+		// 		Tool:    cypher.GetSchemaSpec(),
+		// 		Handler: cypher.GetSchemaHandler(deps, s.config.SchemaSampleSize),
+		// 	},
+		// 	readonly: true,
+		// },
+		// {
+		// 	category: cypherCategory,
+		// 	definition: server.ServerTool{
+		// 		Tool:    cypher.ReadCypherSpec(),
+		// 		Handler: cypher.ReadCypherHandler(deps),
+		// 	},
+		// 	readonly: true,
+		// },
+		// {
+		// 	category: cypherCategory,
+		// 	definition: server.ServerTool{
+		// 		Tool:    cypher.WriteCypherSpec(),
+		// 		Handler: cypher.WriteCypherHandler(deps),
+		// 	},
+		// 	readonly: false,
+		// },
+
+		// =============================================================================
 		// GDS Category/Section
+		// =============================================================================
 		{
 			category: gdsCategory,
 			definition: server.ServerTool{
@@ -137,6 +161,45 @@ func (s *Neo4jMCPServer) getAllToolsDefs(deps *tools.ToolDependencies) []ToolDef
 			},
 			readonly: true,
 		},
-		// Add other categories below...
+
+		// =============================================================================
+		// MicroStrategy Migration Tools - Search (unified GUID/name lookup)
+		// =============================================================================
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.SearchMetricsSpec(),
+				Handler: mstr.SearchMetricsHandler(deps),
+			},
+			readonly: true,
+		},
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.SearchAttributesSpec(),
+				Handler: mstr.SearchAttributesHandler(deps),
+			},
+			readonly: true,
+		},
+
+		// =============================================================================
+		// MicroStrategy Migration Tools - Trace (combined lineage)
+		// =============================================================================
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.TraceMetricSpec(),
+				Handler: mstr.TraceMetricHandler(deps),
+			},
+			readonly: true,
+		},
+		{
+			category: mstrCategory,
+			definition: server.ServerTool{
+				Tool:    mstr.TraceAttributeSpec(),
+				Handler: mstr.TraceAttributeHandler(deps),
+			},
+			readonly: true,
+		},
 	}
 }

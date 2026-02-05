@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/config"
+	"github.com/google/uuid"
 )
 
 const eventNamePrefix = "MCP4NEO4J"

@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "flow-microstrategy-mcp",
   "version": "1.0.0",
-  "description": "Flow Microstrategy MCP server (powered by CI&T Flow) - Built on top of Neo4j MCP.",
+  "description": "MCP server for MicroStrategy to Power BI migration - query metrics, attributes, dependencies and lineage.",
   "author": {
     "name": "CI&T Flow",
     "url": "https://flow.ciandt.com/"
@@ -96,19 +96,35 @@
   "tools": [
     {
       "name": "get-schema",
-      "description": "Introspect labels, relationship types, property keys"
+      "description": "Retrieve the schema information from the Neo4j database, including node labels, relationship types, and property keys. USE FOR: Understanding the database structure before writing queries. DO NOT USE FOR: Querying actual data (use read-cypher instead)."
     },
     {
       "name": "read-cypher",
-      "description": "Execute arbitrary Cypher (read mode)"
+      "description": "Execute read-only Cypher queries against the Neo4j database. USE FOR: Custom queries, ad-hoc data exploration, complex aggregations. DO NOT USE FOR: Write operations (use write-cypher), schema/admin commands, or PROFILE queries."
     },
     {
       "name": "write-cypher",
-      "description": "Execute arbitrary Cypher (write mode)"
+      "description": "Execute arbitrary Cypher queries with write access against the Neo4j database. USE FOR: Creating, updating, or deleting nodes and relationships. DO NOT USE FOR: Read-only queries (use read-cypher instead). CAUTION: LLM-generated queries could cause harm - use only in development environments."
     },
     {
       "name": "list-gds-procedures",
-      "description": "List GDS procedures available in the instance"
+      "description": "Discover available Graph Data Science (GDS) procedures in the Neo4j environment. USE FOR: Planning graph analytics (centrality, community detection, similarity, pathfinding) before executing them. DO NOT USE FOR: Executing GDS procedures (use read-cypher or write-cypher with the discovered procedure). NOTE: Empty response indicates GDS is not installed."
+    },
+    {
+      "name": "search-metrics",
+      "description": "Find MicroStrategy Metrics by GUID or name. Accepts full GUIDs, partial GUIDs (8+ chars), or name search terms. USE FOR: Finding metrics by name or GUID, filtering by parity status, getting metric details before tracing lineage. DO NOT USE FOR: Partial GUIDs < 8 chars, lineage tracing (use trace-metric), searching Attributes (use search-attributes). PAGINATION: Returns 100 results; if moreResults=true, call again with offset+100."
+    },
+    {
+      "name": "search-attributes",
+      "description": "Find MicroStrategy Attributes by GUID or name. Accepts full GUIDs, partial GUIDs (8+ chars), or name search terms. USE FOR: Finding attributes by name or GUID, filtering by parity status, getting attribute details before tracing lineage. DO NOT USE FOR: Partial GUIDs < 8 chars, lineage tracing (use trace-attribute), searching Metrics (use search-metrics). PAGINATION: Returns 100 results; if moreResults=true, call again with offset+100."
+    },
+    {
+      "name": "trace-metric",
+      "description": "Trace lineage of a MicroStrategy Metric using live graph traversal. USE FOR: Impact analysis - finding reports that use a metric (upstream), data lineage - finding source tables (downstream), migration planning. DO NOT USE FOR: Searching metrics by name (use search-metrics first to get the GUID). DIRECTION: 'upstream' = toward reports (consumers), 'downstream' = toward tables (data sources). PAGINATION: Returns 100 results; if moreResults=true, call again with offset+100."
+    },
+    {
+      "name": "trace-attribute",
+      "description": "Trace lineage of a MicroStrategy Attribute using live graph traversal. USE FOR: Impact analysis - finding reports that use an attribute (upstream), data lineage - finding source tables (downstream), migration planning. DO NOT USE FOR: Searching attributes by name (use search-attributes first to get the GUID). DIRECTION: 'upstream' = toward reports (consumers), 'downstream' = toward tables (data sources). PAGINATION: Returns 100 results; if moreResults=true, call again with offset+100."
     }
   ],
   "compatibility": {
@@ -119,10 +135,13 @@
     "CI&T",
     "Flow Microstrategy",
     "MCP",
-    "Flow Microstrategy MCP",
-    "Flow MCP Server",
-    "Neo4j",
-    "flow-microstrategy-mcp"
+    "MicroStrategy",
+    "Power BI",
+    "Migration",
+    "Metrics",
+    "Attributes",
+    "Lineage",
+    "Neo4j"
   ],
   "license": "GPL",
   "repository": {

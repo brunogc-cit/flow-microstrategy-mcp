@@ -19,8 +19,8 @@ import (
 // go build -C cmd/flow-microstrategy-mcp -o ../../bin/ -ldflags "-X 'main.Version=9999'"
 var Version = "development"
 
-const MixPanelEndpoint = "https://api.mixpanel.com"
-const MixPanelToken = "4bfb2414ab973c741b6f067bf06d5575" // #nosec G101 -- MixPanel tokens are safe to be public
+const MixPanelEndpoint = "https://api-eu.mixpanel.com"
+const MixPanelToken = "4fb982c0133a47e3d5adb0f6ab649358" // #nosec G101 -- MixPanel tokens are safe to be public
 
 func main() {
 	// Handle CLI arguments (version, help, etc.)

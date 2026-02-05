@@ -5,10 +5,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	db "github.com/brunogc-cit/flow-microstrategy-mcp/internal/database/mocks"
 	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools"
 	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools/gds"
+	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/neo4j/neo4j-go-driver/v6/neo4j"
 	"go.uber.org/mock/gomock"
 )
