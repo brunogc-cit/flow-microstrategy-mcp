@@ -32,12 +32,13 @@ MATCH (n:Attribute {guid: $guid})
 WITH n,
      COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
 
-// Find prioritized reports that depend on this attribute (live traversal)
-// Reports connect to attributes through various paths (direct, via Prompts, Filters, Metrics, etc.)
+// Find prioritized reports that depend on this attribute (live BFS traversal)
+// Path filter: Only traverse through [Prompt, Filter] intermediate nodes (canonical dashboard pattern)
 // Filter: Only prioritized reports (priority_level IS NOT NULL) - aligns with dashboard
-OPTIONAL MATCH (report)-[:DEPENDS_ON*1..10]->(n)
+OPTIONAL MATCH path = (report)-[:DEPENDS_ON*1..10]->(n)
 WHERE report.type IN ['Report', 'GridReport', 'Document']
   AND report.priority_level IS NOT NULL
+  AND ALL(mid IN nodes(path)[1..-1] WHERE mid.type IN ['Prompt', 'Filter'])
 
 WITH n, effectiveStatus, report
 ORDER BY report.name ASC
@@ -98,9 +99,11 @@ MATCH (n:Attribute {guid: $guid})
 WITH n,
      COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
 
-// Find source tables via live traversal (Attribute -> ... -> LogicalTable)
-OPTIONAL MATCH (n)-[:DEPENDS_ON*1..10]->(t)
+// Find source tables via live BFS traversal (Attribute -> [Fact,Metric,Attribute,Column]* -> Table)
+// Path filter: Only traverse through [Fact, Metric, Attribute, Column] intermediate nodes
+OPTIONAL MATCH path = (n)-[:DEPENDS_ON*1..10]->(t)
 WHERE t.type IN ['LogicalTable', 'Table']
+  AND ALL(mid IN nodes(path)[1..-1] WHERE mid.type IN ['Fact', 'Metric', 'Attribute', 'Column'])
 
 WITH n, effectiveStatus, t
 ORDER BY t.name ASC

@@ -1,7 +1,7 @@
 # MCP Tools Reference
 
 **Date Created:** January 30, 2026  
-**Last Updated:** February 3, 2026  
+**Last Updated:** February 5, 2026  
 **API Server:** Remote MCP Server  
 **Total Tools:** 4 MicroStrategy tools  
 **Status:** ✅ PRODUCTION
@@ -348,11 +348,13 @@ MATCH (n:Metric {guid: $guid})
 WITH n,
      COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
 
--- Find prioritized reports that depend on this metric (live traversal, 10 hops)
+-- Find prioritized reports that depend on this metric (live BFS traversal, 10 hops)
+-- Path filter: Only traverse through [Prompt, Filter] intermediate nodes (canonical dashboard pattern)
 -- Filter: Only prioritized reports (priority_level IS NOT NULL)
-OPTIONAL MATCH (report)-[:DEPENDS_ON*1..10]->(n)
+OPTIONAL MATCH path = (report)-[:DEPENDS_ON*1..10]->(n)
 WHERE report.type IN ['Report', 'GridReport', 'Document']
   AND report.priority_level IS NOT NULL
+  AND ALL(mid IN nodes(path)[1..-1] WHERE mid.type IN ['Prompt', 'Filter'])
 
 WITH n, effectiveStatus, report
 ORDER BY report.name ASC
@@ -533,11 +535,13 @@ MATCH (n:Attribute {guid: $guid})
 WITH n,
      COALESCE(n.updated_parity_status, n.parity_status, 'No Status') as effectiveStatus
 
--- Find prioritized reports that depend on this attribute (live traversal, 10 hops)
+-- Find prioritized reports that depend on this attribute (live BFS traversal, 10 hops)
+-- Path filter: Only traverse through [Prompt, Filter] intermediate nodes (canonical dashboard pattern)
 -- Filter: Only prioritized reports (priority_level IS NOT NULL)
-OPTIONAL MATCH (report)-[:DEPENDS_ON*1..10]->(n)
+OPTIONAL MATCH path = (report)-[:DEPENDS_ON*1..10]->(n)
 WHERE report.type IN ['Report', 'GridReport', 'Document']
   AND report.priority_level IS NOT NULL
+  AND ALL(mid IN nodes(path)[1..-1] WHERE mid.type IN ['Prompt', 'Filter'])
 
 WITH n, effectiveStatus, report
 ORDER BY report.name ASC
@@ -741,10 +745,29 @@ The trace tools use **live graph traversal** following `DEPENDS_ON` relationship
 
 ### Traversal Directions
 
-| Direction | Purpose | Query Pattern | Target Types |
-|-----------|---------|---------------|--------------|
-| **Downstream** (M/A → Reports) | Find prioritized reports using an object | `(report)-[:DEPENDS_ON*1..10]->(n)` | `[Report, GridReport, Document]` |
-| **Upstream** (M/A → Tables) | Find source tables | `(n)-[:DEPENDS_ON*1..10]->(table)` | `[LogicalTable, Table]` |
+| Direction | Purpose | Query Pattern | Target Types | Intermediate Filter |
+|-----------|---------|---------------|--------------|---------------------|
+| **Downstream** (M/A → Reports) | Find prioritized reports using an object | `path = (report)-[:DEPENDS_ON*1..10]->(n)` | `[Report, GridReport, Document]` | `['Prompt', 'Filter']` |
+| **Upstream** (M/A → Tables) | Find source tables | `path = (n)-[:DEPENDS_ON*1..10]->(table)` | `[LogicalTable, Table]` | `['Fact', 'Metric', 'Attribute', 'Column']` |
+
+### Intermediate Type Filters
+
+Both directions use **path-constrained BFS** to ensure traversals follow canonical dashboard patterns:
+
+**Downstream (to reports):**
+```cypher
+AND ALL(mid IN nodes(path)[1..-1] WHERE mid.type IN ['Prompt', 'Filter'])
+```
+
+**Upstream (to tables):**
+```cypher
+AND ALL(mid IN nodes(path)[1..-1] WHERE mid.type IN ['Fact', 'Metric', 'Attribute', 'Column'])
+```
+
+These filters ensure:
+- Downstream paths only traverse through Prompts and Filters (report dependency chain)
+- Upstream paths traverse through Facts, Metrics, Attributes, and Columns (data lineage chain)
+- Results match the dashboard's canonical query behavior
 
 ### Prioritized Filter
 
@@ -845,6 +868,7 @@ The following fields have been removed from responses:
 
 | Date | Version | Change |
 |------|---------|--------|
+| 2026-02-05 | 4.1.0 | Added intermediate type filters to trace queries: downstream uses `['Prompt', 'Filter']`, upstream uses `['Fact', 'Metric', 'Attribute', 'Column']`. Fixes 39 vs 44 table divergence (see doc 106). |
 | 2026-02-04 | 4.0.0 | Replaced pre-computed lineage with live graph traversal; Added pagination (offset) to trace tools; Trace tools now use DEPENDS_ON*1..10 traversal |
 | 2026-02-03 | 3.0.0 | Major refactor: Reduced to 4 tools (search-metrics, search-attributes, trace-metric, trace-attribute); Unified search by GUID or name; Added ADO link; Removed counts, groups, and NeoDash-specific parameters |
 | 2026-01-30 | 2.3.0 | Added consistent verbose comments to all 6 optimized queries |
