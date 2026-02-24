@@ -35,6 +35,7 @@ Options:
   --flow-http-tls-enabled <BOOLEAN>   Enable TLS/HTTPS for HTTP server: true or false (overrides environment variable FLOW_MCP_HTTP_TLS_ENABLED)
   --flow-http-tls-cert-file <PATH>    Path to TLS certificate file (overrides environment variable FLOW_MCP_HTTP_TLS_CERT_FILE)
   --flow-http-tls-key-file <PATH>     Path to TLS private key file (overrides environment variable FLOW_MCP_HTTP_TLS_KEY_FILE)
+  --flow-enable-cypher-tools <BOOLEAN> Enable generic Cypher tools (get-schema, read-cypher, write-cypher): true or false (overrides environment variable FLOW_ENABLE_CYPHER_TOOLS)
 
 Required Environment Variables:
   FLOW_URI        Neo4j database URI
@@ -53,6 +54,7 @@ Optional Environment Variables:
   FLOW_MCP_HTTP_TLS_ENABLED Enable TLS/HTTPS for HTTP server (default: false)
   FLOW_MCP_HTTP_TLS_CERT_FILE Path to TLS certificate file (required when TLS is enabled)
   FLOW_MCP_HTTP_TLS_KEY_FILE Path to TLS private key file (required when TLS is enabled)
+  FLOW_ENABLE_CYPHER_TOOLS Enable generic Cypher tools (default: false)
 
 Examples:
   # Using environment variables
@@ -80,6 +82,7 @@ type Args struct {
 	HTTPTLSEnabled     string
 	HTTPTLSCertFile    string
 	HTTPTLSKeyFile     string
+	EnableCypherTools  string
 }
 
 // this is a list of known configuration flags to be skipped in HandleArgs
@@ -99,6 +102,7 @@ var argsSlice = []string{
 	"--flow-http-tls-enabled",
 	"--flow-http-tls-cert-file",
 	"--flow-http-tls-key-file",
+	"--flow-enable-cypher-tools",
 }
 
 // ParseConfigFlags parses CLI flags and returns configuration values.
@@ -118,6 +122,7 @@ func ParseConfigFlags() *Args {
 	flowHTTPTLSEnabled := flag.String("flow-http-tls-enabled", "", "Enable TLS/HTTPS for HTTP server: true or false (overrides FLOW_MCP_HTTP_TLS_ENABLED env var)")
 	flowHTTPTLSCertFile := flag.String("flow-http-tls-cert-file", "", "Path to TLS certificate file (overrides FLOW_MCP_HTTP_TLS_CERT_FILE env var)")
 	flowHTTPTLSKeyFile := flag.String("flow-http-tls-key-file", "", "Path to TLS private key file (overrides FLOW_MCP_HTTP_TLS_KEY_FILE env var)")
+	flowEnableCypherTools := flag.String("flow-enable-cypher-tools", "", "Enable generic Cypher tools: true or false (overrides FLOW_ENABLE_CYPHER_TOOLS env var)")
 
 	flag.Parse()
 
@@ -136,6 +141,7 @@ func ParseConfigFlags() *Args {
 		HTTPTLSEnabled:     *flowHTTPTLSEnabled,
 		HTTPTLSCertFile:    *flowHTTPTLSCertFile,
 		HTTPTLSKeyFile:     *flowHTTPTLSKeyFile,
+		EnableCypherTools:  *flowEnableCypherTools,
 	}
 }
 

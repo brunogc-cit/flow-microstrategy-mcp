@@ -43,6 +43,7 @@ type Config struct {
 	HTTPTLSCertFile    string        // Path to TLS certificate file (required if HTTPTLSEnabled is true)
 	HTTPTLSKeyFile     string        // Path to TLS private key file (required if HTTPTLSEnabled is true)
 	APIToken           string        // Fixed API token for HTTP mode authentication (optional, enables server-side Neo4j credentials)
+	EnableCypherTools  bool          // If true, exposes generic Cypher tools (get-schema, read-cypher, write-cypher)
 	MCPVersion         string        // MCP version string
 }
 
@@ -114,19 +115,20 @@ func (c *Config) Validate() error {
 
 // CLIOverrides holds optional configuration values from CLI flags
 type CLIOverrides struct {
-	URI            string
-	Username       string
-	Password       string
-	Database       string
-	ReadOnly       string
-	Telemetry      string
-	TransportMode  string
-	Port           string
-	Host           string
-	AllowedOrigins string
-	TLSEnabled     string
-	TLSCertFile    string
-	TLSKeyFile     string
+	URI               string
+	Username          string
+	Password          string
+	Database          string
+	ReadOnly          string
+	Telemetry         string
+	TransportMode     string
+	Port              string
+	Host              string
+	AllowedOrigins    string
+	TLSEnabled        string
+	TLSCertFile       string
+	TLSKeyFile        string
+	EnableCypherTools string
 }
 
 // LoadConfig loads configuration from environment variables, applies CLI overrides, and validates.
@@ -167,6 +169,7 @@ func LoadConfig(cliOverrides *CLIOverrides) (*Config, error) {
 		HTTPTLSCertFile:    GetEnv("FLOW_MCP_HTTP_TLS_CERT_FILE"),
 		HTTPTLSKeyFile:     GetEnv("FLOW_MCP_HTTP_TLS_KEY_FILE"),
 		APIToken:           GetEnv("FLOW_API_TOKEN"),
+		EnableCypherTools:  ParseBool(GetEnv("FLOW_ENABLE_CYPHER_TOOLS"), false),
 	}
 
 	// Apply CLI overrides if provided
@@ -209,6 +212,9 @@ func LoadConfig(cliOverrides *CLIOverrides) (*Config, error) {
 		}
 		if cliOverrides.TLSKeyFile != "" {
 			cfg.HTTPTLSKeyFile = cliOverrides.TLSKeyFile
+		}
+		if cliOverrides.EnableCypherTools != "" {
+			cfg.EnableCypherTools = ParseBool(cliOverrides.EnableCypherTools, false)
 		}
 	}
 
