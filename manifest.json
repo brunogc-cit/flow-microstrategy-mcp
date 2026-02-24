@@ -73,6 +73,13 @@
       "description": "Number of nodes to sample for schema inference",
       "required": false,
       "sensitive": false
+    },
+    "FLOW_ENABLE_CYPHER_TOOLS": {
+      "type": "boolean",
+      "title": "Enable Cypher tools",
+      "description": "Set to true to enable generic Cypher tools (get-schema, read-cypher, write-cypher). Default: false",
+      "required": false,
+      "sensitive": false
     }
   },
   "server": {
@@ -89,7 +96,8 @@
         "FLOW_TELEMETRY": "${user_config.FLOW_TELEMETRY}",
         "FLOW_LOG_LEVEL": "${user_config.FLOW_LOG_LEVEL}",
         "FLOW_LOG_FORMAT": "${user_config.FLOW_LOG_FORMAT}",
-        "FLOW_SCHEMA_SAMPLE_SIZE": "${user_config.FLOW_SCHEMA_SAMPLE_SIZE}"
+        "FLOW_SCHEMA_SAMPLE_SIZE": "${user_config.FLOW_SCHEMA_SAMPLE_SIZE}",
+        "FLOW_ENABLE_CYPHER_TOOLS": "${user_config.FLOW_ENABLE_CYPHER_TOOLS}"
       }
     }
   },
