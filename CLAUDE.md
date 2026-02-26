@@ -50,7 +50,6 @@ npx @modelcontextprotocol/inspector go run ./cmd/flow-microstrategy-mcp
 export FLOW_URI="bolt://localhost:7687"
 export FLOW_USERNAME="neo4j"
 export FLOW_PASSWORD="password"
-export FLOW_ENABLE_CYPHER_TOOLS="true"  # Optional: enables get-schema, read-cypher, write-cypher (default: false)
 ```
 
 **HTTP mode:**
@@ -74,7 +73,7 @@ export FLOW_MCP_TRANSPORT="http"
 
 **internal/tools/**
 - `types.go` - `ToolDependencies` struct (DBService, AnalyticsService)
-- `cypher/` - Generic Cypher tools (opt-in via FLOW_ENABLE_CYPHER_TOOLS): `get-schema`, `read-cypher`, `write-cypher`
+- `cypher/` - Read-only Cypher tools: `get-schema`, `read-cypher`
 - `gds/` - GDS tools: `list-gds-procedures`
 
 **internal/database/**

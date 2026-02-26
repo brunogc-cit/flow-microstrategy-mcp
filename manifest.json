@@ -73,13 +73,6 @@
       "description": "Number of nodes to sample for schema inference",
       "required": false,
       "sensitive": false
-    },
-    "FLOW_ENABLE_CYPHER_TOOLS": {
-      "type": "boolean",
-      "title": "Enable Cypher tools",
-      "description": "Set to true to enable generic Cypher tools (get-schema, read-cypher, write-cypher). Default: false",
-      "required": false,
-      "sensitive": false
     }
   },
   "server": {
@@ -96,8 +89,7 @@
         "FLOW_TELEMETRY": "${user_config.FLOW_TELEMETRY}",
         "FLOW_LOG_LEVEL": "${user_config.FLOW_LOG_LEVEL}",
         "FLOW_LOG_FORMAT": "${user_config.FLOW_LOG_FORMAT}",
-        "FLOW_SCHEMA_SAMPLE_SIZE": "${user_config.FLOW_SCHEMA_SAMPLE_SIZE}",
-        "FLOW_ENABLE_CYPHER_TOOLS": "${user_config.FLOW_ENABLE_CYPHER_TOOLS}"
+        "FLOW_SCHEMA_SAMPLE_SIZE": "${user_config.FLOW_SCHEMA_SAMPLE_SIZE}"
       }
     }
   },
@@ -108,15 +100,11 @@
     },
     {
       "name": "read-cypher",
-      "description": "Execute read-only Cypher queries against the Neo4j database. USE FOR: Custom queries, ad-hoc data exploration, complex aggregations. DO NOT USE FOR: Write operations (use write-cypher), schema/admin commands, or PROFILE queries."
-    },
-    {
-      "name": "write-cypher",
-      "description": "Execute arbitrary Cypher queries with write access against the Neo4j database. USE FOR: Creating, updating, or deleting nodes and relationships. DO NOT USE FOR: Read-only queries (use read-cypher instead). CAUTION: LLM-generated queries could cause harm - use only in development environments."
+      "description": "Execute read-only Cypher queries against the Neo4j database. USE FOR: Custom queries, ad-hoc data exploration, complex aggregations. DO NOT USE FOR: Write operations (CREATE, MERGE, DELETE, SET), schema/admin commands, or PROFILE queries."
     },
     {
       "name": "list-gds-procedures",
-      "description": "Discover available Graph Data Science (GDS) procedures in the Neo4j environment. USE FOR: Planning graph analytics (centrality, community detection, similarity, pathfinding) before executing them. DO NOT USE FOR: Executing GDS procedures (use read-cypher or write-cypher with the discovered procedure). NOTE: Empty response indicates GDS is not installed."
+      "description": "Discover available Graph Data Science (GDS) procedures in the Neo4j environment. USE FOR: Planning graph analytics (centrality, community detection, similarity, pathfinding) before executing them. DO NOT USE FOR: Executing GDS procedures (use read-cypher with the discovered procedure). NOTE: Empty response indicates GDS is not installed."
     },
     {
       "name": "search-metrics",

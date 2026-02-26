@@ -22,7 +22,7 @@ func TestToolRegister(t *testing.T) {
 	aService.EXPECT().NewStartupEvent(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	aService.EXPECT().NewConnectionInitializedEvent(gomock.Any()).AnyTimes()
 
-	t.Run("verifies expected tools are registered (cypher disabled)", func(t *testing.T) {
+	t.Run("verifies expected tools are registered", func(t *testing.T) {
 		mockDB := getMockedDBService(ctrl, true)
 		mockDB.EXPECT().ExecuteReadQuery(gomock.Any(), "CALL dbms.components()", gomock.Any()).Times(1)
 		cfg := &config.Config{
@@ -34,36 +34,8 @@ func TestToolRegister(t *testing.T) {
 		}
 		s := server.NewNeo4jMCPServer("test-version", cfg, mockDB, aService)
 
-		// 1 GDS (list-gds-procedures) + 4 MSTR tools = 5 total
-		// Cypher tools (get-schema, read-cypher, write-cypher) disabled by default
-		expectedTotalToolsCount := 5
-
-		err := s.Start()
-		if err != nil {
-			t.Fatalf("Start() failed: %v", err)
-		}
-		registeredTools := len(s.MCPServer.ListTools())
-
-		if expectedTotalToolsCount != registeredTools {
-			t.Errorf("Expected %d tools, but test configuration shows %d", expectedTotalToolsCount, registeredTools)
-		}
-	})
-
-	t.Run("verifies cypher tools are registered when EnableCypherTools is true", func(t *testing.T) {
-		mockDB := getMockedDBService(ctrl, true)
-		mockDB.EXPECT().ExecuteReadQuery(gomock.Any(), "CALL dbms.components()", gomock.Any()).Times(1)
-		cfg := &config.Config{
-			URI:               "bolt://test-host:7687",
-			Username:          "neo4j",
-			Password:          "password",
-			Database:          "neo4j",
-			TransportMode:     config.TransportModeStdio,
-			EnableCypherTools: true,
-		}
-		s := server.NewNeo4jMCPServer("test-version", cfg, mockDB, aService)
-
-		// 1 GDS + 4 MSTR + 3 Cypher (get-schema, read-cypher, write-cypher) = 8 total
-		expectedTotalToolsCount := 8
+		// 2 Cypher (get-schema, read-cypher) + 1 GDS (list-gds-procedures) + 4 MSTR = 7 total
+		expectedTotalToolsCount := 7
 
 		err := s.Start()
 		if err != nil {
@@ -89,36 +61,7 @@ func TestToolRegister(t *testing.T) {
 		}
 		s := server.NewNeo4jMCPServer("test-version", cfg, mockDB, aService)
 
-		// All MSTR and GDS tools are readonly, so all 5 tools are registered
-		expectedTotalToolsCount := 5
-
-		err := s.Start()
-		if err != nil {
-			t.Fatalf("Start() failed: %v", err)
-		}
-		registeredTools := len(s.MCPServer.ListTools())
-
-		if expectedTotalToolsCount != registeredTools {
-			t.Errorf("Expected %d tools, but test configuration shows %d", expectedTotalToolsCount, registeredTools)
-		}
-	})
-
-	t.Run("should register readonly cypher tools when both readonly and EnableCypherTools are true", func(t *testing.T) {
-		mockDB := getMockedDBService(ctrl, true)
-		mockDB.EXPECT().ExecuteReadQuery(gomock.Any(), "CALL dbms.components()", gomock.Any()).Times(1)
-		cfg := &config.Config{
-			URI:               "bolt://test-host:7687",
-			Username:          "neo4j",
-			Password:          "password",
-			Database:          "neo4j",
-			ReadOnly:          true,
-			EnableCypherTools: true,
-			TransportMode:     config.TransportModeStdio,
-		}
-		s := server.NewNeo4jMCPServer("test-version", cfg, mockDB, aService)
-
-		// 1 GDS + 4 MSTR + 2 readonly Cypher (get-schema, read-cypher) = 7 total
-		// write-cypher is excluded because ReadOnly=true
+		// All tools are readonly, so all 7 tools are registered
 		expectedTotalToolsCount := 7
 
 		err := s.Start()
@@ -132,7 +75,7 @@ func TestToolRegister(t *testing.T) {
 		}
 	})
 
-	t.Run("should register also write tools when readonly is set to false", func(t *testing.T) {
+	t.Run("should register all tools when readonly is set to false", func(t *testing.T) {
 		mockDB := getMockedDBService(ctrl, true)
 		mockDB.EXPECT().ExecuteReadQuery(gomock.Any(), "CALL dbms.components()", gomock.Any()).Times(1)
 		cfg := &config.Config{
@@ -145,8 +88,8 @@ func TestToolRegister(t *testing.T) {
 		}
 		s := server.NewNeo4jMCPServer("test-version", cfg, mockDB, aService)
 
-		// 1 GDS + 4 MSTR = 5 total (cypher tools disabled by default)
-		expectedTotalToolsCount := 5
+		// 2 Cypher + 1 GDS + 4 MSTR = 7 total (no write tools exist)
+		expectedTotalToolsCount := 7
 
 		err := s.Start()
 		if err != nil {
@@ -172,8 +115,8 @@ func TestToolRegister(t *testing.T) {
 		}
 		s := server.NewNeo4jMCPServer("test-version", cfg, mockDB, aService)
 
-		// 4 MSTR tools only (list-gds-procedures excluded, cypher disabled)
-		expectedTotalToolsCount := 4
+		// 2 Cypher + 4 MSTR = 6 total (list-gds-procedures excluded)
+		expectedTotalToolsCount := 6
 
 		err := s.Start()
 		if err != nil {

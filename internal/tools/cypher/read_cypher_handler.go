@@ -48,7 +48,7 @@ func handleReadCypher(ctx context.Context, request mcp.CallToolRequest, deps *to
 	}
 
 	if queryType != neo4j.QueryTypeReadOnly { // only queryType == "r" are allowed in read-cypher
-		errMessage := "read-cypher can only run read-only Cypher statements. For write operations (CREATE, MERGE, DELETE, SET, etc...), schema/admin commands, or PROFILE queries, use write-cypher instead."
+		errMessage := "read-cypher can only run read-only Cypher statements. Write operations (CREATE, MERGE, DELETE, SET, etc.), schema/admin commands, and PROFILE queries are not supported."
 		slog.Error("rejected non-read query", "type", queryType, "query", Query)
 		return mcp.NewToolResultError(errMessage), nil
 	}
