@@ -148,6 +148,7 @@ Available flags:
 - `--flow-http-tls-enabled` - Enable TLS/HTTPS: `true` or `false` (overrides FLOW_MCP_HTTP_TLS_ENABLED)
 - `--flow-http-tls-cert-file` - Path to TLS certificate file (overrides FLOW_MCP_HTTP_TLS_CERT_FILE)
 - `--flow-http-tls-key-file` - Path to TLS private key file (overrides FLOW_MCP_HTTP_TLS_KEY_FILE)
+- `--flow-enable-cypher-tools` - Enable generic Cypher tools: `true` or `false` (overrides FLOW_ENABLE_CYPHER_TOOLS, default: `false`)
 
 Use `flow-microstrategy-mcp --help` to see all available options.
 
@@ -169,6 +170,16 @@ These tools enable LLM agents to search for MicroStrategy objects and trace thei
 | `search-attributes` | `true`   | Find Attributes by GUID or name                   | Accepts full GUIDs, partial GUIDs (8+ chars), or name search terms    |
 | `trace-metric`      | `true`   | Trace Metric lineage (reports, tables, deps)      | Returns reports using it, source tables, and direct dependencies      |
 | `trace-attribute`   | `true`   | Trace Attribute lineage (reports, tables, deps)   | Returns reports using it, source tables, and direct dependencies      |
+
+### Generic Cypher Tools (opt-in)
+
+These tools are disabled by default and can be enabled by setting `FLOW_ENABLE_CYPHER_TOOLS=true`. They allow users to run arbitrary Cypher queries against the Neo4j database:
+
+| Tool                  | ReadOnly | Purpose                                              | Notes                                                                 |
+| --------------------- | -------- | ---------------------------------------------------- | --------------------------------------------------------------------- |
+| `get-schema`          | `true`   | Retrieve database schema (labels, types, properties) | Useful for understanding the database structure before querying        |
+| `read-cypher`         | `true`   | Execute read-only Cypher queries                     | Validates queries are read-only before execution                      |
+| `write-cypher`        | `false`  | Execute write Cypher queries                         | Hidden in read-only mode. Use with caution in production               |
 
 ### Optional Tools
 

@@ -1,0 +1,2 @@
+kind: Minor
+body: Add opt-in generic Cypher tools (get-schema, read-cypher, write-cypher) via FLOW_ENABLE_CYPHER_TOOLS flag (default false). When enabled, users can execute arbitrary Cypher queries. In read-only mode, only get-schema and read-cypher are exposed.

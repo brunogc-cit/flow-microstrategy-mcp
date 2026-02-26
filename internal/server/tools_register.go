@@ -4,6 +4,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 
 	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools"
+	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools/cypher"
 	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools/gds"
 	"github.com/brunogc-cit/flow-microstrategy-mcp/internal/tools/mstr"
 )
@@ -25,7 +26,7 @@ type toolFilter func(tools []ToolDefinition) []ToolDefinition
 type toolCategory int
 
 const (
-	cypherCategory toolCategory = 0 // Hidden - generic Neo4j tools (code kept but not exposed)
+	cypherCategory toolCategory = 0 // Generic Neo4j Cypher tools (opt-in via FLOW_ENABLE_CYPHER_TOOLS)
 	gdsCategory    toolCategory = 1
 	mstrCategory   toolCategory = 2 // MicroStrategy migration tools
 )
@@ -66,8 +67,10 @@ func (s *Neo4jMCPServer) getEnabledTools() []server.ServerTool {
 	if !s.gdsInstalled {
 		filters = append(filters, filterGDSTools)
 	}
-	// Always filter out generic cypher tools (hidden but code kept)
-	filters = append(filters, filterCypherTools)
+	// Filter out generic cypher tools unless explicitly enabled
+	if s.config == nil || !s.config.EnableCypherTools {
+		filters = append(filters, filterCypherTools)
+	}
 
 	deps := &tools.ToolDependencies{
 		DBService:        s.dbService,
@@ -106,7 +109,7 @@ func filterGDSTools(tools []ToolDefinition) []ToolDefinition {
 }
 
 // filterCypherTools removes generic cypher tools (get-schema, read-cypher, write-cypher)
-// These are hidden from users but the code is kept in internal/tools/cypher/
+// Applied when FLOW_ENABLE_CYPHER_TOOLS is not set or false
 func filterCypherTools(tools []ToolDefinition) []ToolDefinition {
 	nonCypherTools := make([]ToolDefinition, 0, len(tools))
 	for _, t := range tools {
@@ -122,33 +125,32 @@ func (s *Neo4jMCPServer) getAllToolsDefs(deps *tools.ToolDependencies) []ToolDef
 
 	return []ToolDefinition{
 		// =============================================================================
-		// HIDDEN: Generic Cypher Tools (code kept but not exposed to users)
+		// Generic Cypher Tools (opt-in via FLOW_ENABLE_CYPHER_TOOLS)
 		// =============================================================================
-		// These tools are filtered out by filterCypherTools() but kept for potential future use
-		// {
-		// 	category: cypherCategory,
-		// 	definition: server.ServerTool{
-		// 		Tool:    cypher.GetSchemaSpec(),
-		// 		Handler: cypher.GetSchemaHandler(deps, s.config.SchemaSampleSize),
-		// 	},
-		// 	readonly: true,
-		// },
-		// {
-		// 	category: cypherCategory,
-		// 	definition: server.ServerTool{
-		// 		Tool:    cypher.ReadCypherSpec(),
-		// 		Handler: cypher.ReadCypherHandler(deps),
-		// 	},
-		// 	readonly: true,
-		// },
-		// {
-		// 	category: cypherCategory,
-		// 	definition: server.ServerTool{
-		// 		Tool:    cypher.WriteCypherSpec(),
-		// 		Handler: cypher.WriteCypherHandler(deps),
-		// 	},
-		// 	readonly: false,
-		// },
+		{
+			category: cypherCategory,
+			definition: server.ServerTool{
+				Tool:    cypher.GetSchemaSpec(),
+				Handler: cypher.GetSchemaHandler(deps, s.config.SchemaSampleSize),
+			},
+			readonly: true,
+		},
+		{
+			category: cypherCategory,
+			definition: server.ServerTool{
+				Tool:    cypher.ReadCypherSpec(),
+				Handler: cypher.ReadCypherHandler(deps),
+			},
+			readonly: true,
+		},
+		{
+			category: cypherCategory,
+			definition: server.ServerTool{
+				Tool:    cypher.WriteCypherSpec(),
+				Handler: cypher.WriteCypherHandler(deps),
+			},
+			readonly: false,
+		},
 
 		// =============================================================================
 		// GDS Category/Section
