@@ -175,7 +175,7 @@ func loggingMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			slog.Debug("HTTP Request",
+			slog.Debug("HTTP Request", //nolint:gosec // G706: request fields are safe to log at debug level
 				"method", r.Method,
 				"url", r.URL.Path,
 				"remote_addr", r.RemoteAddr,

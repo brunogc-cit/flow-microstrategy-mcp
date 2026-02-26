@@ -18,6 +18,16 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
+    rules:
+      - linters: [gosec]
+        rules: [G117]
+        path: "internal/config/"
+      - linters: [gosec]
+        rules: [G117]
+        path: "internal/cli/"
+      - linters: [gosec]
+        rules: [G101]
+        path: "_test\\.go"
   settings:
     staticcheck:
       checks:
