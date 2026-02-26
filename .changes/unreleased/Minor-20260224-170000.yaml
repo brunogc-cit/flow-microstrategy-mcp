@@ -1,2 +1,0 @@
-kind: Minor
-body: Enable get-schema and read-cypher tools for database exploration and read-only Cypher queries
