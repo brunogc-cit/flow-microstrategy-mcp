@@ -93,7 +93,6 @@ jobs:
                 FLOW_MCP_HTTP_PORT="8080" \
                 FLOW_MCP_HTTP_HOST="0.0.0.0" \
                 FLOW_TELEMETRY="true" \
-                FLOW_ENABLE_CYPHER_TOOLS="true" \
               --registry-server ${{ env.REGISTRY }} \
               --registry-username ${{ github.actor }} \
               --registry-password ${{ secrets.GITHUB_TOKEN }} \

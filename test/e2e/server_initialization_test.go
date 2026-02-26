@@ -99,45 +99,9 @@ func TestServerInitializationE2E(t *testing.T) {
 				t.Fatal("write-cypher tool found using readonly mode")
 			}
 		}
-		// Cypher tools disabled by default: 4 MSTR + 0-1 GDS = 4-5 tools
-		assert.GreaterOrEqual(t, len(listToolsResponse.Tools), 4, "read-only mode should have at least 4 tools (MSTR tools)")
-		assert.LessOrEqual(t, len(listToolsResponse.Tools), 5, "read-only mode should have at most 5 tools (MSTR + list-gds-procedures)")
-	})
-
-	t.Run("initialization with read-only mode and cypher tools enabled", func(t *testing.T) {
-		t.Parallel()
-
-		args := []string{
-			"--flow-uri", cfg.URI,
-			"--flow-username", cfg.Username,
-			"--flow-password", cfg.Password,
-			"--flow-database", cfg.Database,
-			"--flow-read-only", "true",
-			"--flow-enable-cypher-tools", "true",
-		}
-
-		mcpClient, err := client.NewStdioMCPClient(server, []string{}, args...)
-		require.NoError(t, err, "failed to create MCP client")
-
-		defer mcpClient.Close()
-
-		initRequest := helpers.BuildInitializeRequest()
-		initResponse, err := mcpClient.Initialize(ctx, initRequest)
-		require.NoError(t, err, "failed to initialize MCP server in read-only mode with cypher tools")
-
-		assert.Equal(t, "flow-microstrategy-mcp", initResponse.ServerInfo.Name)
-
-		listToolsResponse, err := mcpClient.ListTools(ctx, mcp.ListToolsRequest{})
-		require.NoError(t, err, "failed to list tools in read-only mode with cypher tools")
-
-		for _, tool := range listToolsResponse.Tools {
-			if tool.Name == "write-cypher" {
-				t.Fatal("write-cypher tool found using readonly mode (even with cypher tools enabled)")
-			}
-		}
-		// 4 MSTR + 2 readonly Cypher (get-schema, read-cypher) + 0-1 GDS = 6-7 tools
-		assert.GreaterOrEqual(t, len(listToolsResponse.Tools), 6, "read-only + cypher should have at least 6 tools")
-		assert.LessOrEqual(t, len(listToolsResponse.Tools), 7, "read-only + cypher should have at most 7 tools")
+		// 2 Cypher (get-schema, read-cypher) + 4 MSTR + 0-1 GDS = 6-7 tools
+		assert.GreaterOrEqual(t, len(listToolsResponse.Tools), 6, "read-only mode should have at least 6 tools")
+		assert.LessOrEqual(t, len(listToolsResponse.Tools), 7, "read-only mode should have at most 7 tools")
 	})
 
 	t.Run("initialization with read-only mode disabled", func(t *testing.T) {
@@ -149,7 +113,6 @@ func TestServerInitializationE2E(t *testing.T) {
 			"--flow-password", cfg.Password,
 			"--flow-database", cfg.Database,
 			"--flow-read-only", "false",
-			"--flow-enable-cypher-tools", "true",
 		}
 
 		mcpClient, err := client.NewStdioMCPClient(server, []string{}, args...)
@@ -159,15 +122,15 @@ func TestServerInitializationE2E(t *testing.T) {
 
 		initRequest := helpers.BuildInitializeRequest()
 		initResponse, err := mcpClient.Initialize(ctx, initRequest)
-		require.NoError(t, err, "failed to initialize MCP server with cypher tools enabled")
+		require.NoError(t, err, "failed to initialize MCP server")
 
 		assert.Equal(t, "flow-microstrategy-mcp", initResponse.ServerInfo.Name)
 
 		listToolsResponse, err := mcpClient.ListTools(ctx, mcp.ListToolsRequest{})
-		require.NoError(t, err, "failed to list tools with cypher tools enabled")
-		// 4 MSTR + 3 Cypher (get-schema, read-cypher, write-cypher) + 0-1 GDS = 7-8 tools
-		assert.GreaterOrEqual(t, len(listToolsResponse.Tools), 7, "cypher enabled should have at least 7 tools")
-		assert.LessOrEqual(t, len(listToolsResponse.Tools), 8, "cypher enabled should have at most 8 tools")
+		require.NoError(t, err, "failed to list tools")
+		// 2 Cypher (get-schema, read-cypher) + 4 MSTR + 0-1 GDS = 6-7 tools
+		assert.GreaterOrEqual(t, len(listToolsResponse.Tools), 6, "should have at least 6 tools")
+		assert.LessOrEqual(t, len(listToolsResponse.Tools), 7, "should have at most 7 tools")
 	})
 	t.Run("initialization with telemetry disabled", func(t *testing.T) {
 		t.Parallel()

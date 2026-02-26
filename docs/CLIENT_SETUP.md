@@ -30,7 +30,6 @@ export FLOW_TELEMETRY="true"               # Default: true
 export FLOW_LOG_LEVEL="info"               # Default: info
 export FLOW_LOG_FORMAT="text"              # Default: text
 export FLOW_SCHEMA_SAMPLE_SIZE="100"       # Default: 100
-export FLOW_ENABLE_CYPHER_TOOLS="false"    # Default: false
 ```
 
 ### HTTP Mode
@@ -81,7 +80,6 @@ export FLOW_TELEMETRY="true"               # Default: true
 export FLOW_LOG_LEVEL="info"               # Default: info
 export FLOW_LOG_FORMAT="text"              # Default: text
 export FLOW_SCHEMA_SAMPLE_SIZE="100"       # Default: 100
-export FLOW_ENABLE_CYPHER_TOOLS="false"    # Default: false
 ```
 
 ### CORS Configuration
@@ -119,8 +117,7 @@ Create or edit `mcp.json` (docs: https://code.visualstudio.com/docs/copilot/cust
         "FLOW_TELEMETRY": "false",
         "FLOW_LOG_LEVEL": "info",
         "FLOW_LOG_FORMAT": "text",
-        "FLOW_SCHEMA_SAMPLE_SIZE": "100",
-        "FLOW_ENABLE_CYPHER_TOOLS": "false"
+        "FLOW_SCHEMA_SAMPLE_SIZE": "100"
       }
     }
   }
@@ -202,8 +199,7 @@ Create the file if it doesn't exist, then add the `flow-microstrategy-mcp` serve
         "FLOW_TELEMETRY": "false",
         "FLOW_LOG_LEVEL": "info",
         "FLOW_LOG_FORMAT": "text",
-        "FLOW_SCHEMA_SAMPLE_SIZE": "100",
-        "FLOW_ENABLE_CYPHER_TOOLS": "false"
+        "FLOW_SCHEMA_SAMPLE_SIZE": "100"
       }
     }
   }

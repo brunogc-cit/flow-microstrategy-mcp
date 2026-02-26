@@ -26,7 +26,7 @@ type toolFilter func(tools []ToolDefinition) []ToolDefinition
 type toolCategory int
 
 const (
-	cypherCategory toolCategory = 0 // Generic Neo4j Cypher tools (opt-in via FLOW_ENABLE_CYPHER_TOOLS)
+	cypherCategory toolCategory = 0 // Read-only Cypher tools (get-schema, read-cypher)
 	gdsCategory    toolCategory = 1
 	mstrCategory   toolCategory = 2 // MicroStrategy migration tools
 )
@@ -67,10 +67,6 @@ func (s *Neo4jMCPServer) getEnabledTools() []server.ServerTool {
 	if !s.gdsInstalled {
 		filters = append(filters, filterGDSTools)
 	}
-	// Filter out generic cypher tools unless explicitly enabled
-	if s.config == nil || !s.config.EnableCypherTools {
-		filters = append(filters, filterCypherTools)
-	}
 
 	deps := &tools.ToolDependencies{
 		DBService:        s.dbService,
@@ -108,24 +104,12 @@ func filterGDSTools(tools []ToolDefinition) []ToolDefinition {
 	return nonGDSTools
 }
 
-// filterCypherTools removes generic cypher tools (get-schema, read-cypher, write-cypher)
-// Applied when FLOW_ENABLE_CYPHER_TOOLS is not set or false
-func filterCypherTools(tools []ToolDefinition) []ToolDefinition {
-	nonCypherTools := make([]ToolDefinition, 0, len(tools))
-	for _, t := range tools {
-		if t.category != cypherCategory {
-			nonCypherTools = append(nonCypherTools, t)
-		}
-	}
-	return nonCypherTools
-}
-
 // getAllToolsDefs returns all available tools with their specs and handlers
 func (s *Neo4jMCPServer) getAllToolsDefs(deps *tools.ToolDependencies) []ToolDefinition {
 
 	return []ToolDefinition{
 		// =============================================================================
-		// Generic Cypher Tools (opt-in via FLOW_ENABLE_CYPHER_TOOLS)
+		// Read-only Cypher Tools
 		// =============================================================================
 		{
 			category: cypherCategory,
@@ -142,14 +126,6 @@ func (s *Neo4jMCPServer) getAllToolsDefs(deps *tools.ToolDependencies) []ToolDef
 				Handler: cypher.ReadCypherHandler(deps),
 			},
 			readonly: true,
-		},
-		{
-			category: cypherCategory,
-			definition: server.ServerTool{
-				Tool:    cypher.WriteCypherSpec(),
-				Handler: cypher.WriteCypherHandler(deps),
-			},
-			readonly: false,
 		},
 
 		// =============================================================================
