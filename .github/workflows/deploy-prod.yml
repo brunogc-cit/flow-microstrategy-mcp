@@ -6,9 +6,10 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release tag to deploy (e.g. v3.1.0)'
-        required: true
+        description: 'Release tag to deploy (e.g. v3.1.0). Leave empty to deploy from the selected branch (e.g. main).'
+        required: false
         type: string
+        default: ''
 
 env:
   REGISTRY: ghcr.io
@@ -28,7 +29,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' && inputs.version || github.ref }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -44,8 +45,13 @@ jobs:
         id: version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ inputs.version }}"
-            VERSION=${VERSION#v}
+            if [ -n "${{ inputs.version }}" ]; then
+              VERSION="${{ inputs.version }}"
+              VERSION=${VERSION#v}
+            else
+              # Deploy from branch: use branch name + short SHA (e.g. main-2149227)
+              VERSION="${{ github.ref_name }}-$(git rev-parse --short HEAD)"
+            fi
           else
             VERSION=${GITHUB_REF_NAME#v}
           fi
@@ -68,7 +74,9 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
