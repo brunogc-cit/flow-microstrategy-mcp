@@ -7,7 +7,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  AZURE_RESOURCE_GROUP: ASOS_AI
+  AZURE_RESOURCE_GROUP: ASOS_AI2
   AZURE_CONTAINER_ENV: cae-mcp-asos
   AZURE_LOCATION: uksouth
 
